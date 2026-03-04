@@ -1,0 +1,21 @@
+development:
+  database:
+    host: "localhost"
+    port: 5432
+    database: "metamw_development_prod_version"
+    user: "admin"
+    password: "secret"
+  paths:
+    letters_input: "data/letters"
+    logs: "logs/development.indexer.log"
+
+test:
+  database:
+    host: "localhost"
+    port: 5432
+    database: "letter_ai_test"
+    user: "postgres"
+    password: "password"
+  paths:
+    letters_input: "tests/fixtures"
+    logs: "logs/test.indexer.log"
