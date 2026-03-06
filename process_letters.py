@@ -1,79 +1,81 @@
 import os
 import yaml
-import glob
 import torch
-from tqdm import tqdm  # Für die Fortschrittsanzeige
+from tqdm import tqdm
+from app.database.connection import DBConnection
+from app.database.models.letter import Letter
+from app.database.models.letter_embedding import LetterEmbedding
 from sentence_transformers import SentenceTransformer
 from app.indexer.tei_chunker import TEIChunker
-from app.database.ingest_chunks import ChunkIngester
+from app.database.services.ingest_chunks_service import IngestChunksService
 
 def load_config(env="development"):
+    """Loads database and application configuration from YAML."""
     with open("config/settings.yml", "r") as f:
         return yaml.safe_load(f)[env]
 
 def run_pipeline():
-    # 1. Konfiguration laden
+    # 1. Load Configuration
     config = load_config()
-    db_params = config['database']
-    input_path = config['paths']['letters_input']
+    DBConnection.set_config(config['database'])
 
     # 2. Setup GPU & Model
+    # Leveraging the RTX 3080: uses CUDA if available
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"--- Initialisiere Modell auf {device.upper()} ---")
+    print(f"--- Initializing model on {device.upper()} ---")
     model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2', device=device)
 
-    # 3. Setup Datenbank-Ingester
-    ingester = ChunkIngester(db_params)
+    # 3. Setup Database Ingester
+    ingester = IngestChunksService()
 
-    # 4. Dateien finden
-    xml_files = glob.glob(os.path.join(input_path, "**/*.xml"))
-    if not xml_files:
-        print(f"Keine XML-Dateien in {input_path} gefunden!")
-        return
+    print(f"--- Starting processing of letters from database ---")
 
-    print(f"--- Starte Verarbeitung von {len(xml_files)} Briefen ---")
-
-    # 5. Loop mit Fortschrittsbalken (tqdm)
-    # desc ist die Beschreibung, unit='file' zeigt die Dateien pro Sekunde
-    for file_path in tqdm(xml_files, desc="Briefe indexieren", unit="file"):
-        file_name = os.path.basename(file_path)
-
-        try:
-            # A. Parsing & Chunking
-            chunker = TEIChunker(file_path)
-            raw_chunks = chunker.parse_to_chunks(sentences_per_chunk=3)
-
-            print(f"Gefundene Chunks in {file_name}: {len(raw_chunks)}")
-
-            processed_chunks = []
-            if raw_chunks:
-                # Wir holen uns alle Texte eines Briefes in eine Liste für Batch-Encoding
-                texts = [c['content'] for c in raw_chunks]
-                
-                # B. Batch-Vektorisierung (Viel schneller als einzeln!)
-                # Die RTX 3080 liebt Batches
-                vectors = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+    # Truncate the target table before inserting new data (use with caution!)
+    LetterEmbedding.truncate_table()
 
 
-                for i, chunk in enumerate(raw_chunks):
-                    full_metadata = chunk.get('metadata', {})
-                    full_metadata['source_file'] = file_name
-                    
-                    processed_chunks.append({
-                        "content": chunk['content'],
-                        "metadata": full_metadata,
-                        "vector": vectors[i].tolist()
-                    })
+    # 4. Loop over database batches
+    # We fetch letters in batches to optimize memory usage
+    for batch in Letter.find_all_with_xml(batch_size=10):
+        # Using an inner progress bar for the current batch
+        for letter in tqdm(batch, desc="Processing batch", unit="letter"):
+            try:
+                # A. Parsing & Chunking
+                # The chunker now processes the XML string directly from the DB record
+                chunker = TEIChunker(letter.xml_content) 
+                raw_chunks = chunker.parse_to_chunks(sentences_per_chunk=3)
 
-                # C. Datenbank-Upload
-                ingester.upload_chunks(processed_chunks)
+                processed_chunks = []
+                if raw_chunks:
+                    # B. Batch Vectorization
+                    # Encoding all chunks of a letter at once is significantly faster on GPU
+                    texts = [c['content'] for c in raw_chunks]
+                    vectors = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
 
-        except Exception as e:
-            # Wir nutzen tqdm.write, damit die Fehlermeldung den Balken nicht zerschießt
-            tqdm.write(f"FEHLER in {file_name}: {e}")
+                    for i, chunk in enumerate(raw_chunks):
+                        full_metadata = chunk.get('metadata', {})
+                        
+                        # Link the chunk to the original letter via letter_id
+                        full_metadata['letter_id'] = letter.id 
+                        full_metadata['letter_name'] = letter.name
+                        
+                        processed_chunks.append({
+                            "letter_id": letter.id, # This will be used in the DB schema to link back to the original letter
+                            "content": chunk['content'],
+                            "metadata": full_metadata,
+                            "vector": vectors[i].tolist() # Convert numpy array to list for JSON/PgVector
+                        })
 
+                    # C. Database Upload
+                    ingester.upload_chunks(processed_chunks)
+
+            except Exception as e:
+                # Use tqdm.write to prevent log messages from breaking the progress bar UI
+                tqdm.write(f"ERROR processing letter ID {letter.name}: {e}")
+
+    # Clean up connection
     ingester.close()
-    print("\n--- Alle Briefe erfolgreich in die Datenbank übertragen ---")
+    print("\n--- All letters successfully transferred to the database ---")
 
 if __name__ == "__main__":
     run_pipeline()
