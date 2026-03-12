@@ -4,20 +4,29 @@ class Person:
     """Model for handling Person-related database operations."""
 
     @classmethod
-    def find_by_key(cls, key: str) -> dict:
+    def entity_profile(cls, key: str) -> dict:
         """
         Fetches person data from the database by its unique key.
         Returns a dictionary of columns or None if not found.
         """
-        # Using a context manager for the connection to ensure it closes properly
         conn = DBConnection.get_connection()
         try:
             with conn.cursor() as cur:
-                # We select exactly the columns the Service needs for _build_info_string
-                # Adjust 'name' and 'dates' to your actual column names
                 query = """
-                    SELECT first_name, last_name, index_name, letter_name, birth_year, death_year
-                    FROM persons 
+                    SELECT 
+                        first_name, 
+                        last_name, 
+                        index_name, 
+                        letter_name, 
+                        birth_year, 
+                        death_year,
+                        updated_at,
+                        married_to,
+                        background,
+                        description,
+                        source,
+                        relation
+                    FROM people
                     WHERE key = %s 
                     LIMIT 1
                 """
@@ -32,6 +41,13 @@ class Person:
                         "letter_name": row[3],
                         "birth_year": row[4],
                         "death_year": row[5],
+                        "death_year": row[5],
+                        "last_updated_at": row[6],
+                        "married_to_name": row[7],
+                        "background": row[8],
+                        "description": row[9],
+                        "source": row[10],
+                        "relation": row[11],
                     }
                 return {} 
         except Exception as e:

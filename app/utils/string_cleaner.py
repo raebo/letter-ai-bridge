@@ -38,3 +38,24 @@ class StringCleaner:
         # 4. Limit the number of aliases to avoid "diluting" the vector
         # We take the first 4 most important aliases
         return ", ".join(parts[:4])
+
+
+    @staticmethod
+    def extract_bio_summary(raw_notes: str) -> str:
+        """
+        Extracts the first descriptive sentence for AI context.
+        Removes research noise like bibliographical codes or internal markers.
+        """
+        if not raw_notes: return ""
+
+        # 1. Take first sentence
+        first_part = re.split(r'\.\s|\n', raw_notes)[0]
+
+        # 2. Clean noise (MSB Bd. 12, etc.)
+        clean = re.sub(r'^[A-Z]{2,3}\s(Bd\.|Vol\.)\s?\d+:\s?', '', first_part)
+        
+        # 3. Remove leading name repetition (e.g., "Mialle, Simon (1786-1840), ")
+        # This looks for a string of text followed by dates in parens and a comma
+        clean = re.sub(r'^.*?\(.*?\),?\s?', '', clean)
+
+        return clean.strip()

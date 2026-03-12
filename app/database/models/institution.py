@@ -1,7 +1,7 @@
 from app.database.connection import DBConnection
 
-class ProtagCreation:
-    """Model for handling Protagcreation -related database operations"""
+class Institution:
+    """Model for handling Place-Sight-related database operations"""
 
     @classmethod
     def entity_profile(cls, key: str) -> dict:
@@ -13,19 +13,19 @@ class ProtagCreation:
         conn = DBConnection.get_connection()
         try:
             with conn.cursor() as cur:
-                # We select exactly the columns the Service needs for _build_info_string
-                # Adjust 'name' and 'country_name' to your actual column names
                 query = """
                     SELECT 
                         s.name, 
                         s.kind,
                         s.notes,
                         p.name, 
-                        c.name
+                        c.name,
+                        s.updated_at,
+                        s.info
                     FROM places s
                     LEFT JOIN places p ON s.parent_id = p.id
                     LEFT JOIN countries c ON p.country_id = c.id
-                    WHERE s.key = %s 
+                    WHERE s.key = %s AND s.type = 'Institution'
                     LIMIT 1
                 """
                 cur.execute(query, (key,))
@@ -37,7 +37,9 @@ class ProtagCreation:
                         "kind": row[1],
                         "notes": row[2],
                         "settlement_name": row[3],
-                        "country_name": row[4]
+                        "country_name": row[4],
+                        "last_updated_at": row[5],
+                        "info": row[6],
                     }
                 return {} 
         except Exception as e:

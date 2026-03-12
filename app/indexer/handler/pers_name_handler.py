@@ -1,14 +1,21 @@
 from .base_handler import TEIElementHandler
-from ..handlers.tei_cleaner import TEICleaner
+from app.database.services.entity_resolution.retrieve_entity_infos_service import RetrieveInfosService
 
 class PersNameHandler(TEIElementHandler):
     def handle(self, node, namespaces, context_stack):
+        surface_name = "".join(node.xpath(".//text()")).strip()
+        key = node.get("key")
         
-        key = node.get("key") or "".join(node.xpath(".//tei:persName/@key", namespaces=namespaces))
+        metadata_to_return = {}
+        display_text = surface_name
 
         if key:
-            TEICleaner.report_key("people", key)
-        
-        display_text = f"{name} [{key}]" if key else name
-        new_stack = context_stack + [name] if name else context_stack
-        return f" {display_text} ", new_stack
+            # Call the base class helper
+            entity = self._get_or_fetch_entity(category="people", prefix="PSN", key=key)
+            
+            if entity.get("info"):
+                display_text = f"{entity['info']} [{key}]"
+                metadata_to_return = {key: entity["metadata"]}
+
+        new_stack = context_stack + [surface_name]
+        return f" {display_text} ", new_stack, metadata_to_return

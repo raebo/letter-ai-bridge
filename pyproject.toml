@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "letter-ai-bridge"
+version = "0.1.0"
+description = "Bridge between TEI XML letters and Vector Database for HU Berlin"
+dependencies = [
+    "lxml",
+    "psycopg2-binary",
+    "sentence-transformers",
+    "pytest"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

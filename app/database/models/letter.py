@@ -1,5 +1,5 @@
 from ..connection import DBConnection
-from psycopg2.extras import DictCursor
+erom psycopg2.extras import DictCursor
 
 class Letter:
     def __init__(self, record):

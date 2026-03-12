@@ -1,19 +1,20 @@
 import re
-from app.indexer.handler import PlaceHandler, NoteHandler
+from app.indexer.handler import PlaceHandler, NoteHandler, PersNameHandler
 
 class TEICleaner:
     _captured_keys = {
-            "people": set(),
-            "sights": set(),
-            "institutions": set(),
-            "settlements": set(),
-            "countries": set(),
-            "creations": set(),
-            "protag_creations": set()
+            "people": {},
+            "sights": {},
+            "institutions": {},
+            "settlements": {},
+            "countries": {},
+            "creations": {},
+            "protag_creations": {},
             }
 
     _handlers = {
         'placeName': PlaceHandler(),
+        'persName': PersNameHandler(),
         'note': NoteHandler(),
     }
 
@@ -39,49 +40,38 @@ class TEICleaner:
             cls._captured_keys[key].clear()
 
     @classmethod
-    def report_key(cls, category, key):
-        """Register a key under specified category for later context injection."""
+    def report_key(cls, category, key, info_string, **metadata):
+        """
+        Register a key with its info string and a flexible metadata hash.
+        Usage: StringCleaner.report_key("people", "PSN1", "Felix...", notes="...", gender="m")
+        """
         if category in cls._captured_keys:
-            cls._captured_keys[category].add(key)
+            cls._captured_keys[category][key] = {
+                "info": info_string,
+                "metadata": metadata  # This is now a dict: {'notes': '...', 'etc': '...'}
+            }
 
     @classmethod
-    def get_captured_keys(cls, category):
-        """Convert sets to lists for JSON serialization and return captured keys for a category."""
-        return { cat: list(keys) for cat, keys in cls._captured_keys.items() if keys }
+    def get_captured_keys(cls):
+        """Returns the full dictionary of captured entities and their metadata."""
+        return { cat: data for cat, data in cls._captured_keys.items() if data }
 
     @classmethod
     def process_node(cls, node, namespaces):
-        """Transform a XML node into a clean text for KI."""
-        tag = node.tag.replace(f'{{{namespaces["tei"]}}}', '') if "{" in node.tag else node.tag
-
-        handler = cls._handlers.get(tag)
-
-        if handler:
-            result, updated_stack = handler.handle(node, namespaces, cls._context_stack)
-
-            if updated_stack is not None:
-                cls._context_stack = updated_stack
-                # Optional: Stack begrenzen, damit Kontext nicht über Seiten hinweg mitschleppt
-                if len(cls._context_stack) > 2:
-                    cls._context_stack = []
-
-            return result
+        """Dispatcher: Finds a handler or uses the default logic."""
+        # Clean the tag name (remove namespace)
+        tag = node.tag.split('}')[-1] if '}' in node.tag else node.tag
         
-        # 1. names with IDs (Context Injection)
-        if tag in ['name', 'persName', 'placeName', 'title']:
-            key = node.get("key")
-            name_text = "".join(node.xpath(".//text()")).strip()
-            return f" {name_text} [{key}] " if key else name_text
+        # Get specific handler or use a fallback 'GenericHandler'
+        handler = cls._handlers.get(tag, cls._handlers['default'])
+        
+        # Pass the cleaner itself as a 'controller' so handlers can report keys
+        result, updated_stack = handler.handle(node, namespaces, cls._context_stack)
 
-        # 2. Editorial notes (marking)
-        if tag == 'note':
-            note_text = "".join(node.xpath(".//text()")).strip()
-            # Wir markieren Anmerkungen, damit die KI den Kontext versteht
-            return f" [Anm.: {note_text}] "
+        if updated_stack is not None:
+            cls._context_stack = updated_stack
+            # Keep stack lean (max 2 items)
+            if len(cls._context_stack) > 2:
+                cls._context_stack = cls._context_stack[-2:]
 
-        # 3. Milestones (Ignore)
-        if tag in ['pb', 'lb', 'cb', 'fw']:
-            return ""
-
-        # 4. Default: Recursive text extraction
-        return "".join(node.xpath(".//text()"))
+        return result
