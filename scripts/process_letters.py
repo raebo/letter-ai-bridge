@@ -1,7 +1,7 @@
 import os
-import yaml
 import torch
 from tqdm import tqdm
+from app.core.config import settings
 from app.database.connection import DBConnection
 from app.database.models.letter import Letter
 from app.database.models.letter_embedding import LetterEmbedding
@@ -9,15 +9,10 @@ from sentence_transformers import SentenceTransformer
 from app.indexer.tei_chunker import TEIChunker
 from app.database.services.ingest_chunks_service import IngestChunksService
 
-def load_config(env="development"):
-    """Loads database and application configuration from YAML."""
-    with open("config/settings.yml", "r") as f:
-        return yaml.safe_load(f)[env]
 
 def run_pipeline():
     # 1. Load Configuration
-    config = load_config()
-    DBConnection.set_config(config['database'])
+    DBConnection.set_config(settings.db_params)
 
     # 2. Setup GPU & Model
     # Leveraging the RTX 3080: uses CUDA if available

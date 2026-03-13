@@ -1,5 +1,6 @@
 from .info_builders import InfoBuilder
 from .metadata_builders import MetadataBuilder
+from app.database.models.letter import Letter
 from app.database.models.person import Person
 from app.database.models.sight import Sight
 from app.database.models.settlement import Settlement
@@ -17,6 +18,7 @@ class RetrieveInfosService:
         "NST": Institution,
         "CRT": Creation,
         "PRC": ProtagCreation,
+        "LET": Letter,
     }
 
     @classmethod
@@ -37,7 +39,10 @@ class RetrieveInfosService:
     def get_info(cls, prefix: str, key: str) -> dict:
         """The Database-dependent method."""
         model = cls._get_model_for_prefix(prefix)
+
+        print(f"Fetching data for prefix '{prefix}' and key '{key}' using model '{model.__name__ if model else 'None'}'")
         data = model.entity_profile(key)
+        print(f"Data fetched for key '{key}'")
         
         if not data:
             return {"info": "", "metadata": {}}

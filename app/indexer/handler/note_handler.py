@@ -8,7 +8,7 @@ class NoteHandler(TEIElementHandler):
         if note_type == "single_place_comment" and context_stack:
             last_element = context_stack[-1] if context_stack else None
             # Wenn der Stack nicht leer ist, beziehen wir uns auf das letzte Element
-            return f" [Info zu {last_element}: {text}] ", context_stack
+            return f" [Info zu {last_element}: {text}] ", context_stack, {}
 
         prefixes = {
                 "single_place_comment": "Orts-Info",
@@ -16,4 +16,7 @@ class NoteHandler(TEIElementHandler):
                 "critical": "Kritischer Apparat"
                 }
         prefix = prefixes.get(note_type, "Anm")
-        return f" [{prefix}: {text}] ", context_stack
+
+        print(f"DEBUG:NodeHandler tag ")
+
+        return f" [{prefix}: {text}] ", context_stack, {}

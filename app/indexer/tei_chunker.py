@@ -7,7 +7,6 @@ class TEIChunker:
         Initializes the chunker with XML content from the database.
         :param xml_content: String containing the TEI XML data.
         """
-        # lxml prefers byte strings when an encoding declaration is present
         if isinstance(xml_content, str):
             self.xml_data = xml_content.encode('utf-8')
         else:
@@ -15,11 +14,17 @@ class TEIChunker:
             
         self.namespaces = {'tei': 'http://www.tei-c.org/ns/1.0'}
 
+        # --- ADD THIS LINE ---
+        # This actually parses the XML so you can run XPaths against it
+        self.tree = etree.fromstring(self.xml_data)
+
     def parse_to_chunks(self, sentences_per_chunk=3):
         """
         Parses the XML and splits the body text into semantic chunks (paragraphs).
         :return: A list of dictionaries containing cleaned text and metadata.
         """
+        print(f"DEBUG: Root tag is {self.tree.tag}")
+
         # Use fromstring for XML data already loaded into memory
         tree = etree.fromstring(self.xml_data)
         
@@ -37,14 +42,24 @@ class TEIChunker:
             
             # Iterate through all child nodes (text and elements) of the paragraph
             parts = []
+            p_id = p.get('{http://www.w3.org/XML/1998/namespace}id')
+            chunk_metadata = {
+                "paragraph_id": p_id,
+                "type": "letter_body",
+                "letter_year": letter_year,
+                "entities": {} # We will store the person data here
+            }
+
             for node in p.xpath("./node()", namespaces=self.namespaces):
                 if isinstance(node, etree._Element):
-                    # Process elements (persName, placeName, etc.) via the Handler system
-                    parts.append(TEICleaner.process_node(node, self.namespaces))
+                    text, meta = TEICleaner.process_node(node, self.namespaces)
+                    parts.append(text)
+                    if meta:
+                        # Merge the person metadata into our chunk metadata
+                        chunk_metadata["entities"].update(meta)
                 else:
-                    # Directly append raw text nodes
                     parts.append(str(node))
-            
+
             raw_text = "".join(parts)
             
             # Perform text hygiene
@@ -53,9 +68,6 @@ class TEIChunker:
             
             # Ignore empty tags or very short fragments
             if len(cleaned_text.strip()) > 10:
-                # Extract the XML ID of the paragraph for traceability
-                p_id = p.get('{http://www.w3.org/XML/1998/namespace}id')
-                
                 chunks.append({
                     "content": cleaned_text,
                     "metadata": {

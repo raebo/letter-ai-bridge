@@ -1,27 +1,21 @@
 import json
-import yaml
-
+from app.core.config import settings
 from app.database.services.entity_resolution.retrieve_infos_service import RetrieveInfosService
 from app.database.connection import DBConnection
 
 
-def load_config(env="development"):
-    """Loads database and application configuration from YAML."""
-    with open("config/settings.yml", "r") as f:
-        return yaml.safe_load(f)[env]
-
 def run_live_test():
-    config = load_config()
-    DBConnection.set_config(config['database'])
+    DBConnection.set_config(settings.db_params)
 
     test_keys = {
-        "PSN": ["PSN0113349"], 
-        "SGH": ["SGH0103934"],
-        "NST": ["NST0104832", "NST0103625"],
-        "STM": ["STM0103862", "STM0103900"],
-        "CRT": ["CRT0112501", "CRT0111666"],
-        # "WRK": ["WRK_Hebriden_Ouverture"],
-    }
+            "PSN": ["PSN0113349"], 
+            "SGH": ["SGH0103934"],
+            "NST": ["NST0104832", "NST0103625"],
+            "STM": ["STM0103862", "STM0103900"],
+            "CRT": ["CRT0112501", "CRT0111666"],
+            "PRC": ["PRC0100294", "PRC0100275"],
+            # "WRK": ["WRK_Hebriden_Ouverture"],
+            }
 
     print("="*60)
     print("LIVE DATABASE ENTITY RESOLUTION TEST")
@@ -33,7 +27,7 @@ def run_live_test():
             try:
                 # 1. Call the service (hits DB -> InfoBuilder -> MetadataBuilder)
                 result = RetrieveInfosService.get_info(prefix, key)
-                
+
                 if not result["info"]:
                     print(f"❌ [{key}]: No data found.")
                     continue
@@ -41,7 +35,7 @@ def run_live_test():
                 # 2. Display the Searchable Info String
                 print(f"✅ [{key}]")
                 print(f"   INFO: {result['info']}")
-                
+
                 # 3. Display the Metadata (Pretty printed)
                 meta_json = json.dumps(result['metadata'], indent=7, ensure_ascii=False)
                 print(f"   META: {meta_json}")

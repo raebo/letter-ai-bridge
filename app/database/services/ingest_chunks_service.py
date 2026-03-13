@@ -1,7 +1,5 @@
-import psycopg2
-from ..connection import DBConnection
+from app.database.connection import DBConnection
 from psycopg2.extras import Json
-import json
 
 class IngestChunksService:
     def __init__(self):

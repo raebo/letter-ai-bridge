@@ -1,18 +1,20 @@
 from os import stat
 from app.utils.string_cleaner import StringCleaner
+from app.core.config import settings
 
 class InfoBuilder:
+
     @classmethod
     def build(cls, prefix: str, data: dict) -> str:
         # Dictionary-based dispatch for speed and clarity
         dispatch = {
-            "PSN": cls._build_person_info,
-            "SGH": cls._build_sight_institution_info,
-            "STM": cls._build_settlement_info,
-            "NST": cls._build_sight_institution_info,
-            "CRT": cls._build_creation_info,
-            "PRC": cls._build_protag_creation_info
-        }
+                "PSN": cls._build_person_info,
+                "SGH": cls._build_sight_institution_info,
+                "STM": cls._build_settlement_info,
+                "NST": cls._build_sight_institution_info,
+                "CRT": cls._build_creation_info,
+                "PRC": cls._build_protag_creation_info
+                }
         builder = dispatch.get(prefix)
         return builder(data) if builder else data.get('name', "")
 
@@ -42,7 +44,7 @@ class InfoBuilder:
         parts = [f"{full_name} {date_info}", bio_summary + marriage_str, alias_str]
 
         return " ".join(filter(None, parts)).strip()
-       
+
 
     @staticmethod
     def _build_sight_institution_info(data: dict) -> str:
@@ -93,12 +95,28 @@ class InfoBuilder:
         info_part = f"[{info}]" if info else ""
 
         parts = [f"{base_name}{author_part}", info_part]
-        
+
         return " ".join(filter(None, parts)).strip()
 
     @staticmethod
     def _build_protag_creation_info(data: dict) -> str:
-        return "TEST"
+        cats = [c['name'] for c in data.get('categories', [])]
+        path_prefix = f"[{' > '.join(cats)}] " if cats else ""
+        
+        # Identity: Name + Catalogs
+        name = data.get('c_name')
+        catalogs = filter(None, [
+            f"MWV {data.get('c_mwv')}" if data.get('c_mwv') else None,
+            f"op. {data.get('c_op')}" if data.get('c_op') else None
+        ])
+        cat_str = f" ({', '.join(catalogs)})" if catalogs else ""
+        
+        authors = settings.protag_name
+            
+        # Hierarchy
+        parent = f" (Teil von: {data.get('p_name')})" if data.get('p_name') else ""
+        
+        return f"{path_prefix}{name}{cat_str} von {authors}{parent}".strip()
 
 
     @staticmethod
@@ -112,8 +130,8 @@ class InfoBuilder:
         """
         if not birth and not death:
             return ""
-        
+
         b_str = str(birth) if birth else "??"
         d_str = str(death) if death else "??"
-        
+
         return f" ({b_str}–{d_str})"

@@ -2,20 +2,23 @@ import re
 
 class StringCleaner:
     @staticmethod
-    def normalize_name(raw_name: str) -> str:
-        if not raw_name:
+    def normalize_name(text: str) -> str:
+        if not text:
             return ""
 
-        # 1. Handle arrows: Replace '→ → →' or '→' with a simple space
-        # This merges "Johanna" and "Kinkel" into one searchable string
-        clean = re.sub(r'→+', ' ', raw_name)
+        # 1. Replace newlines, carriage returns, and tabs with a space
+        # This handles the \r\n found in your "G1833" notes
+        clean = text.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
 
-        # 2. Remove specific annotation markers but keep the names
+        # 2. Handle arrows: Replace '→ → →' with a space
+        clean = re.sub(r'→+', ' ', clean)
+
+        # 3. Remove specific markers and brackets
         # Removes: (Pseud.), [MSB irrt.], etc.
         clean = re.sub(r'\(Pseud\.\)', '', clean)
-        clean = re.sub(r'\[.*?\]', '', clean) # Removes anything in []
+        clean = re.sub(r'\[.*?\]', '', clean) 
 
-        # 3. Clean up whitespace
+        # 4. Clean up whitespace (Collapse multiple spaces into one)
         clean = re.sub(r'\s+', ' ', clean).strip()
 
         return clean

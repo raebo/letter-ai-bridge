@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, List
+from typing import Tuple
 import lxml.etree as ET
+from app.database.services.entity_resolution.retrieve_infos_service import RetrieveInfosService
 
 class TEIElementHandler(ABC):
 
@@ -8,10 +9,12 @@ class TEIElementHandler(ABC):
         """
         Generic cache-first retrieval logic for all handlers.
         """
-        from .tei_cleaner import TEICleaner # Lazy import to avoid circular dependency
-        
+ 
         # 1. Check the cleaner's internal cache
-        cached_entry = TEICleaner.get_captured_keys(category).get(key)
+        from app.indexer.tei_cleaner import TEICleaner
+        cleaner = TEICleaner()
+
+        cached_entry = cleaner.get_captured_keys(category).get(key)
         if cached_entry:
             return cached_entry
 
@@ -20,7 +23,12 @@ class TEIElementHandler(ABC):
         
         if res and res.get("info"):
             # 3. Store in cache for future mentions
-            TEICleaner.report_key(category, key, res["info"], **res["metadata"])
+            TEICleaner.report_key(
+                category=category, 
+                key=key, 
+                info_string=res["info"], 
+                metadata=res.get("metadata", {}) # Pass as a single dict, not unpacked
+            )
             return res
 
         return {"info": None, "metadata": {}}

@@ -11,5 +11,9 @@ class DBConnection:
     @classmethod
     def get_connection(cls):
         if not cls._params:
-            raise Exception("DB-Konfiguration wurde noch nicht gesetzt!")
+            # Instead of just raising an error, we could try to 
+            # auto-initialize from settings if not already set.
+            from app.core.config import settings
+            cls.set_config(settings.db_params)
+            
         return psycopg2.connect(**cls._params)

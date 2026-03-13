@@ -1,5 +1,5 @@
 import re
-from app.indexer.handler import PlaceHandler, NoteHandler, PersNameHandler
+from app.indexer.handler import PlaceHandler, NoteHandler, PersNameHandler, DefaultHandler
 
 class TEICleaner:
     _captured_keys = {
@@ -10,12 +10,14 @@ class TEICleaner:
             "countries": {},
             "creations": {},
             "protag_creations": {},
+            "letters": {},
             }
 
     _handlers = {
         'placeName': PlaceHandler(),
         'persName': PersNameHandler(),
         'note': NoteHandler(),
+        'default': DefaultHandler()
     }
 
     _context_stack = [] # this is for storing the last contextual information, e.g. the last mentioned place, person, etc.
@@ -52,9 +54,12 @@ class TEICleaner:
             }
 
     @classmethod
-    def get_captured_keys(cls):
-        """Returns the full dictionary of captured entities and their metadata."""
-        return { cat: data for cat, data in cls._captured_keys.items() if data }
+    def get_captured_keys(cls, category=None):
+        """Returns the dictionary for a specific category or the whole cache."""
+        if category:
+            # Return the specific category dict, or an empty dict if not found
+            return cls._captured_keys.get(category, {})
+        return cls._captured_keys
 
     @classmethod
     def process_node(cls, node, namespaces):
@@ -63,10 +68,12 @@ class TEICleaner:
         tag = node.tag.split('}')[-1] if '}' in node.tag else node.tag
         
         # Get specific handler or use a fallback 'GenericHandler'
+
+        print(f"DEBUG: tag name: {tag}")
         handler = cls._handlers.get(tag, cls._handlers['default'])
         
         # Pass the cleaner itself as a 'controller' so handlers can report keys
-        result, updated_stack = handler.handle(node, namespaces, cls._context_stack)
+        result_text, updated_stack, metadata = handler.handle(node, namespaces, cls._context_stack)
 
         if updated_stack is not None:
             cls._context_stack = updated_stack
@@ -74,4 +81,4 @@ class TEICleaner:
             if len(cls._context_stack) > 2:
                 cls._context_stack = cls._context_stack[-2:]
 
-        return result
+        return result_text, metadata
