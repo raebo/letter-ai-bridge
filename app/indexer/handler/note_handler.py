@@ -1,7 +1,7 @@
 from .base_handler import TEIElementHandler
 
 class NoteHandler(TEIElementHandler):
-    def handle(self, node, namespaces, context_stack):
+    def handle(self, node, namespaces, context_stack, cleaner=None):
         note_type = node.get("type")
         text = self.get_clean_text(node)
 

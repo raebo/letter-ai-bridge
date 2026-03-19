@@ -1,5 +1,8 @@
 from app.utils.string_cleaner import StringCleaner
+from app.utils.letter_helper import LetterHelper
 
+import logging
+logger = logging.getLogger(__name__)
 
 class MetadataBuilder:
     @classmethod
@@ -11,9 +14,35 @@ class MetadataBuilder:
             "STM": cls._build_place_meta,
             "CRT": cls._build_creation_meta,
             "PRC": cls._build_protag_creation_meta,
+            "LET": cls._build_letter_meta,
         }
         builder = dispatch.get(prefix)
         return builder(data) if builder else data.get('metadata', {})
+
+    @classmethod
+    def _build_letter_meta(cls, data: dict) -> dict:
+        """
+        Constructs a structured metadata dictionary for a letter.
+        Mirroring the logic of _build_person_meta.
+        """
+        try:
+            return {
+                "entity_key": data.get('entity_key'),
+                "entity_type": "letter",
+                "date": LetterHelper.extract_date_from_key(data.get('entity_key', '')) or "Undated",
+                "authors": data.get('authors') or [],
+                "receivers": data.get('receivers') or [],
+                "sending_places": data.get('send_places') or [],
+                "receiving_places": data.get('recv_places') or [],
+                "db_id": data.get('id'),
+                "last_updated": cls._serialize_value(data.get('updated_at')),
+                "is_draft": data.get('status') == 'draft',
+                "source_repository": data.get('repository') or "Unknown"
+            }
+        except Exception as e:
+            logger.error(f"Error building letter metadata for key {data.get('entity_key')}: {e}")
+            raise RuntimeError(f"Failed to build letter metadata for key {data.get('entity_key')}") from e
+
 
     @classmethod
     def _build_person_meta(cls, data: dict) -> dict:

@@ -2,6 +2,9 @@ from os import stat
 from app.utils.string_cleaner import StringCleaner
 from app.core.config import settings
 
+import logging
+logger = logging.getLogger(__name__)
+
 class InfoBuilder:
 
     @classmethod
@@ -13,11 +16,57 @@ class InfoBuilder:
                 "STM": cls._build_settlement_info,
                 "NST": cls._build_sight_institution_info,
                 "CRT": cls._build_creation_info,
-                "PRC": cls._build_protag_creation_info
+                "PRC": cls._build_protag_creation_info,
+                "LET": cls._build_letter_info
                 }
         builder = dispatch.get(prefix)
         return builder(data) if builder else data.get('name', "")
 
+
+    @staticmethod
+    def _build_letter_info(data: dict) -> str:
+        """
+        Constructs a descriptive prose string for a letter based on DB record data.
+        Mirroring the logic of _build_person_info.
+        """
+        try:
+            # 1. Handle the Core Participants
+            authors = data.get('authors') or []
+            receivers = data.get('receivers') or []
+            
+            auth_str = "; ".join(authors) if authors else "Unknown Author"
+            rec_str = "; ".join(receivers) if receivers else "Unknown Receiver"
+
+            # 2. Handle the Locations (with clean prefixing)
+            s_places = data.get('sending_places') or []
+            r_places = data.get('receiving_places') or []
+            
+            # Only add the "in/to" prefix if the list actually has content
+            s_place_part = f"in {'; '.join(s_places)}" if s_places else ""
+            r_place_part = f"to {'; '.join(r_places)}" if r_places else ""
+
+            # 3. Handle the Date (from the entity_key or metadata)
+            date_info = data.get('date', "Undated")
+            date_str = f"[{date_info}]"
+
+            # 4. Assemble the parts into a single clean sentence
+            # Example: Letter from Felix (PSN1) in Berlin to Cécile (PSN2) to Frankfurt [1843-04-04]
+            main_body = f"Letter from {auth_str}"
+
+            
+            parts = [
+                main_body,
+                s_place_part,
+                f"to {rec_str}",
+                r_place_part,
+                date_str
+            ]
+
+            # Filter out any empty strings and join with single spaces
+            return " ".join(filter(None, parts)).strip()
+        except Exception as e:
+            logger.error(f"Error building letter info: {e}")
+            raise RuntimeError("Failed to build letter info") from e
 
     @staticmethod
     def _build_person_info(data: dict) -> str:
@@ -68,7 +117,7 @@ class InfoBuilder:
         country_name = StringCleaner.normalize_name(data.get('country_name'))
 
         info_part = f", {info}" if info else ""
-        parts = [f"{name}", f"[{country_name}{info_part}]"]
+        parts = [f"{name}", f"[{country_name}{info_part}] "]
 
         return " ".join(filter(None, parts)).strip()
 
@@ -114,9 +163,9 @@ class InfoBuilder:
         authors = settings.protag_name
             
         # Hierarchy
-        parent = f" (Teil von: {data.get('p_name')})" if data.get('p_name') else ""
+        parent = f" von (Teil von: {data.get('p_name')})" if data.get('p_name') else ""
         
-        return f"{path_prefix}{name}{cat_str} von {authors}{parent}".strip()
+        return f"{path_prefix}{name}{cat_str} {parent}".strip()
 
 
     @staticmethod

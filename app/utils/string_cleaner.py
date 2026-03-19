@@ -1,6 +1,24 @@
 import re
 
 class StringCleaner:
+
+    @staticmethod
+    def normalize_content(text: str) -> str:
+        if not text:
+            return ""
+
+        # 1. Squash all newlines, tabs, and multiple spaces into one single space
+        # This fixes the XML "pretty print" indentation issue
+        clean = re.sub(r'\s+', ' ', text)
+
+        # 2. Handle specific artifacts if needed (like the arrows)
+        clean = clean.replace('[→]', '').strip()
+
+        # 3. Final collapse of any double spaces created by replacements
+        clean = re.sub(r'\s+', ' ', clean).strip()
+
+        return clean
+
     @staticmethod
     def normalize_name(text: str) -> str:
         if not text:
@@ -62,3 +80,4 @@ class StringCleaner:
         clean = re.sub(r'^.*?\(.*?\),?\s?', '', clean)
 
         return clean.strip()
+

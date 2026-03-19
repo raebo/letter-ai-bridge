@@ -1,5 +1,10 @@
 from lxml import etree
 from app.indexer.tei_cleaner import TEICleaner
+from app.utils.string_cleaner import StringCleaner
+from app.utils.letter_helper import LetterHelper
+
+import logging
+logger = logging.getLogger(__name__)
 
 class TEIChunker:
     def __init__(self, xml_content):
@@ -7,15 +12,14 @@ class TEIChunker:
         Initializes the chunker with XML content from the database.
         :param xml_content: String containing the TEI XML data.
         """
+
         if isinstance(xml_content, str):
             self.xml_data = xml_content.encode('utf-8')
         else:
             self.xml_data = xml_content
             
         self.namespaces = {'tei': 'http://www.tei-c.org/ns/1.0'}
-
-        # --- ADD THIS LINE ---
-        # This actually parses the XML so you can run XPaths against it
+        
         self.tree = etree.fromstring(self.xml_data)
 
     def parse_to_chunks(self, sentences_per_chunk=3):
@@ -23,17 +27,14 @@ class TEIChunker:
         Parses the XML and splits the body text into semantic chunks (paragraphs).
         :return: A list of dictionaries containing cleaned text and metadata.
         """
-        print(f"DEBUG: Root tag is {self.tree.tag}")
-
-        # Use fromstring for XML data already loaded into memory
-        tree = etree.fromstring(self.xml_data)
         
         # Extract the creation date for metadata
-        date_node = tree.xpath('//tei:profileDesc/tei:creation/tei:date/@when', namespaces=self.namespaces)
+        date_node = self.tree.xpath('//tei:profileDesc/tei:creation/tei:date/@when', namespaces=self.namespaces)
+        
         letter_year = date_node[0][:4] if date_node else "Unknown"
         
         # Locate all <p> tags within the <body> section
-        paragraphs = tree.xpath('//tei:text/tei:body//tei:p', namespaces=self.namespaces)
+        paragraphs = self.tree.xpath('//tei:text/tei:body//tei:p', namespaces=self.namespaces)
         
         chunks = []
         for p in paragraphs:
@@ -42,39 +43,75 @@ class TEIChunker:
             
             # Iterate through all child nodes (text and elements) of the paragraph
             parts = []
-            p_id = p.get('{http://www.w3.org/XML/1998/namespace}id')
-            chunk_metadata = {
-                "paragraph_id": p_id,
-                "type": "letter_body",
-                "letter_year": letter_year,
-                "entities": {} # We will store the person data here
-            }
+            accumulated_entities = {}
 
-            for node in p.xpath("./node()", namespaces=self.namespaces):
+            p_id = p.get('{http://www.w3.org/XML/1998/namespace}id')
+
+
+            nodes = p.xpath("./node()", namespaces=self.namespaces)
+
+            for node in nodes:
+                logger.debug(f"Processing node: ")
+
                 if isinstance(node, etree._Element):
+                    logger.debug(f"Node <{node.tag}> is an element. Processing with TEICleaner.")
                     text, meta = TEICleaner.process_node(node, self.namespaces)
                     parts.append(text)
                     if meta:
-                        # Merge the person metadata into our chunk metadata
-                        chunk_metadata["entities"].update(meta)
+                        logger.debug(f"Extracted metadata from node <{node.tag}>: {meta}")
+                        accumulated_entities.update(meta)
                 else:
                     parts.append(str(node))
 
-            raw_text = "".join(parts)
-            
             # Perform text hygiene
-            cleaned_text = TEICleaner.clean_whitespace(raw_text)
+            cleaned_text = TEICleaner.clean_whitespace("".join(parts))
             cleaned_text = TEICleaner.heal_word_breaks(cleaned_text)
             
-            # Ignore empty tags or very short fragments
-            if len(cleaned_text.strip()) > 10:
-                chunks.append({
-                    "content": cleaned_text,
-                    "metadata": {
-                        "paragraph_id": p_id,
-                        "type": "letter_body",
-                        "letter_year": letter_year
-                    }
-                })
+            if len(cleaned_text.strip()) <= 10:
+                continue
+
+            # 3. Delegation Phase (The DRY part)
+            base_metadata = {
+                "paragraph_id": p_id,
+                "type": "letter_body",
+                "letter_year": letter_year,
+                "entities": accumulated_entities
+            }
+            
+            chunks.extend(self._create_sentence_chunks(cleaned_text, base_metadata))
         
         return chunks
+
+
+    def _create_sentence_chunks(self, text, base_metadata, window_size=3, step_size=2):
+        """
+        Splits text into overlapping sentence windows.
+        """
+        sentences = LetterHelper.split_into_sentences(text)
+        chunk_list = []
+
+        # If only one sentence, return immediately
+        if len(sentences) <= 1:
+            chunk_list.append({
+                "content": text,
+                "metadata": {**base_metadata, "sentence_range": "0-0"}
+            })
+            return chunk_list
+
+        # Sliding window logic
+        for i in range(0, len(sentences), step_size):
+            window = sentences[i : i + window_size]
+            
+            # Stop if the window doesn't move the context forward significantly
+            if not window or (i >= len(sentences)):
+                break
+                
+            chunk_list.append({
+                "content": " ".join(window),
+                "metadata": {
+                    **base_metadata, 
+                    "sentence_range": f"{i}-{i+len(window)-1}"
+                }
+            })
+        
+        return chunk_list

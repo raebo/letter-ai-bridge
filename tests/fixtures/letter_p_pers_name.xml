@@ -19,77 +19,102 @@
     </div>
     <div n="1" type="act_of_writing" xml:id="div_3589b88a-10fc-4070-955c-5a1aea761548">
 
+      <p style="paragraph_without_indent">
+          Am Abende nach der Aufführung des „
+        <hi rend="latintype">
+          <title xml:id="title_82a2bc84-45a9-46c5-8ecd-4af750dae7ac">Paulus
+            <list style="hidden" type="fmb_works_directory" xml:id="title_ipxubuzd-nocb-xo6w-hye1-gfyqcbmoyvqr"> 
+              <item n="1" sortKey="musical_works" style="hidden"/> 
+              <item n="2" sortKey="vocal_music" style="hidden"/> 
+              <item n="3" sortKey="sacred_vocal_music" style="hidden"/> 
+              <item n="4" sortKey="large-scale_sacred_vocal_works" style="hidden"/>
+            </list>
+            <name key="PSN0000001" style="hidden" type="author">Mendelssohn Bartholdy (bis 1816: Mendelssohn), Jacob Ludwig Felix (1809-1847)</name>
+            <name key="PRC0100114" style="hidden">Paulus / St. Paul, Oratorium nach Worten der Heiligen Schrift für Solostimmen, gemischten Chor, Orchester und Orgel, [1832] bis 18. April 1836
+              <idno type="MWV">A 14</idno>
+              <idno type="op">36</idno>
+            </name>
+            </title>
+        </hi>.“
+        <span class="in_doc_note">[→]</span>
+        <note resp="FMBC" style="hidden" type="single_place_comment" xml:id="note_ac68ced2-aa45-4e1c-ae00-628302ca178b" xml:lang="de ">
+          der Aufführung des „Paulus.“ – Gemeint ist möglicher Weise die Aufführung des Oratoriums Paulus op. 36 am 15. September 1838 in Leipzig (siehe Hagels, Konzerte in Leipzig, Statistik, S. 993). Infrage kommen aber auch die Paulus-Aufführungen im Januar in Berlin und im April 1838 in Dresden.
+        </note>
+        „Es sind Stellen im „<hi rend="latintype">Paulus</hi>“, bei welchen das Herz jedes Fühlenden überfließen muß vor Freude und Ergebung.“ – So sprach zu mir ein Mitwirkender an der Aufführung. – Ich fand es bestätiget.“<lg rend="right" type="verse"> <l>Hebe empor Dich, freigeword’ne Seele,</l> <l>Auf den Schwingen der heilgen Sprache! </l> <l>Weine</l> <l>Ird’sches Auge, Spiegel der Seele, weine! </l> <l>Thränen der Wonne!</l> <l>#</l> <l>Näher erscheint das Höchste Dir, den Urquell</l> <l>Fühlst Du, ahnest des Jenseits Lust in diesen</l> <l>Tönen – denn die Thränen der Freude sind die </l> <l>Sprache der Sel’gen! –</l> <l>#</l> <l>Lorbeer umkränzt des großen Dichters Stirne</l> <l>Doch sein köstlichstes Kleinod ist die Thrän<unclear reason="paper_destruction" resp="UT">e</unclear></l> <l>Die des Lauschers Auge verklärt bei seine<unclear reason="paper_destruction" resp="UT">m</unclear></l> <l>hohen Gesang! –</l> </lg>
+      </p>
       <p>
-          Des Wirkl Geh. Raths <persName
-            xml:id="persName_6eb2bdbe-fac1-49c5-8fc1-692135b69a79">Herr von Maßows<name
-              key="PSN0113121" style="hidden" type="person">Massow, Ludwig Friedrich
-              Joachim Valentin von (1794-1859)</name></persName> Excellenz hat mich
-                davon in Kenntniß gesetzt, daß Ew. Wohlgeboren in meinem <title
-                  xml:id="title_337efaac-6756-4304-bb8e-f6d046940d97">Schreiben vom 6<hi
-                    rend="superscript">ten</hi> v. M.<name key="PSN0110854" style="hidden"
-                      type="author">Eichhorn, Johann Albrecht Friedrich
-                      (1779-1856)</name><name key="gb-1841-06-06-02" style="hidden"
-                        type="letter">Johann Albrecht Friedrich Eichhorn an Felix Mendelssohn
-                      Bartholdy in Leipzig; Berlin, 6. Juni 1841</name></title> eine nähere
-                      Bestimmung über die Verleihung des Titels: Capellmeister vermißt hätten und
-                        diese noch erwarteten. Da die in meinem <title
-                          xml:id="title_78e3570e-3b49-4830-a52d-e4423cb7d563">Schreiben<name
-                            key="PSN0110854" style="hidden" type="author">Eichhorn, Johann Albrecht
-                            Friedrich (1779-1856)</name><name key="gb-1841-06-06-02" style="hidden"
-                              type="letter">Johann Albrecht Friedrich Eichhorn an Felix Mendelssohn
-                            Bartholdy in Leipzig; Berlin, 6. Juni 1841</name></title> angeführte
-                            <title xml:id="title_fa24e887-ab65-442c-9170-e781ecb5a1b4">A. O.<note
-                              resp="FMBC" style="hidden" type="word_description"
-                              xml:id="note_625152fc-d8d6-4ad3-b150-9fbf22a2b3c8" xml:lang="de ">A. O.
-                              – Allerhöchste Ordre.</note> vom <date cert="high" when="1841-05-30"
-                                xml:id="date_2b9c4435-8cea-4177-9fa0-2369000c9f88">30<hi
-                                  rend="superscript">ten</hi> Mai</date> c.<name key="PSN0113990"
-                                    style="hidden" type="author">Preußen, Friedrich Wilhelm Prinz von (seit
-                                    1840) Friedrich Wilhelm IV. von (1795-1861)</name><name key="CRT0113213"
-                                      style="hidden" type="documents">Ordre pour le mérite – Allerhöchste
-                                    Ordre seiner Majestät des Königs Friedrich Wilhelm IV. von Preußen vom
-                                    30ten Mai 1841 betreffs Felix Mendelssohn Bartholdy</name></title> eine
-                                      ausdrückliche Bestimmung in dieser Beziehung nicht enthielt, <note resp="FMBC"
-                                        style="hidden" type="single_place_comment"
-                                        xml:id="note_68ccff5e-02bd-4c4c-9276-460e91103c82" xml:lang="de ">eine
-                                        ausdrückliche Bestimmung in dieser Beziehung nicht enthielt – Die Ernennung
-                                        zum Königlich Preußischen Kapellmeister, erfolgte trotz Mendelssohns
-                                        Vorbehalten nicht vor seinem Umzug nach Berlin. So erhielt er die
-                                        Bestallungsurkunde erst mit einem Schreiben Eichhorns vom 16. Oktober 1841
-                                        (Brief gb-1841-10-16-01). Grund für die Verzögerung war, dass die Ordre des
-                                        Königs Friedrich Wilhelm IV. von Preußen vom 30. Mai 1841 (siehe Brief
-                                        fmb-1841-06-15-01, Brief Nr. 3176, Felix Mendelssohn Bartholdy an Paul
-                                        Mendelssohn Bartholdy in Berlin, Leipzig, 15. Juni 1841, Z. 26) keine
-                                        Anordnung zur Verleihung des Titels enthielt. Massow teilte Mendelssohn dies
-                                        über einen Brief Kortüms an ihn mit, den er seinem eigenen an Mendelssohn
-                                        vom 14. Juni 1841 (Brief gb-1841-06-14-02) beilegte.</note> so habe ich
-                                          deshalb unverzüglich an des <persName
-                                            xml:id="persName_2a7c1274-6d37-4fb2-89b0-e978fefe77a1">Königs Majestät<name
-                                              key="PSN0113990" style="hidden" type="person">Preußen, Friedrich Wilhelm
-                                              Prinz von (seit 1840) Friedrich Wilhelm IV. von
-                                              (1795-1861)</name></persName> berichtet und mir A.<note resp="FMBC"
-                                                style="hidden" type="word_description"
-                                                xml:id="note_91f6831b-f748-4527-a2fe-2c0c416669ee" xml:lang="de ">A. –
-                                                Allerhöchst.</note> deren Befehle erbeten. Des <persName
-                                                  xml:id="persName_f706f6e2-cd70-48cc-a0c1-ab7e05e55d24">Königs Majestät<name
-                                                    key="PSN0113990" style="hidden" type="person">Preußen, Friedrich Wilhelm
-                                                    Prinz von (seit 1840) Friedrich Wilhelm IV. von
-                                                    (1795-1861)</name></persName> haben hierauf mittelst A. O.<note resp="FMBC"
-                                                      style="hidden" type="word_description"
-                                                      xml:id="note_0b188af0-85ce-43b8-b2a2-280dcc180f69" xml:lang="de ">A. O. –
-                                                      Allerhöchste Ordre.</note> vom <date cert="high" when="1841-06-29"
-                                                        xml:id="date_b7ce7843-133f-4753-8f2a-e55df8d7d951">29<hi rend="superscript"
-                                                          >ten</hi> v. M.</date> mich zu bescheiden geruht, dass <add
-                                                            place="above">Allerhöchster<name key="PSN0118477" resp="writers_hand"
-                                                              style="hidden">Unbekannt</name></add>
-                                                          <unclear reason="deletion" resp="FMBC">Sie</unclear> den Antrag auf Verleihung
-                                                          des Titels: Capellmeister an Ew. Wohlgeboren in Erfüllung gehen laßen würden,
-                                                            sobald die Ver<seg type="pagebreak">|2|<pb n="2" type="pagebreak"
-                                                              /></seg>hältniße in Rücksicht auf die Ihnen künftig zu gebende Stellung
-                                                              definitiv bestimmt seyn werden.
-                                                            </p>
-                                                          </div>
-                                                        </body>
-                                                      </text>
-                                                    </TEI>
+          Des Wirkl Geh. Raths 
+        <persName
+          xml:id="persName_6eb2bdbe-fac1-49c5-8fc1-692135b69a79">Herr von Maßows
+        <name key="PSN0113121" style="hidden" type="person">Massow, Ludwig FriedrichJoachim Valentin von (1794-1859)</name>
+        </persName> Excellenz hat mich
+              davon in Kenntniß gesetzt, daß Ew. Wohlgeboren in meinem <title
+                xml:id="title_337efaac-6756-4304-bb8e-f6d046940d97">Schreiben vom 6<hi
+                  rend="superscript">ten</hi> v. M.<name key="PSN0110854" style="hidden"
+                    type="author">Eichhorn, Johann Albrecht Friedrich
+                    (1779-1856)</name><name key="gb-1841-06-06-02" style="hidden"
+                      type="letter">Johann Albrecht Friedrich Eichhorn an Felix Mendelssohn
+                    Bartholdy in Leipzig; Berlin, 6. Juni 1841</name>
+                  </title> eine nähere
+                    Bestimmung über die Verleihung des Titels: Capellmeister vermißt hätten und
+                      diese noch erwarteten. Da die in meinem 
+          <title xml:id="title_78e3570e-3b49-4830-a52d-e4423cb7d563">Schreiben<name
+          key="PSN0110854" style="hidden" type="author">Eichhorn, Johann Albrecht
+          Friedrich (1779-1856)</name><name key="gb-1841-06-06-02" style="hidden"
+            type="letter">Johann Albrecht Friedrich Eichhorn an Felix Mendelssohn
+          Bartholdy in Leipzig; Berlin, 6. Juni 1841</name></title> angeführte
+          <title xml:id="title_fa24e887-ab65-442c-9170-e781ecb5a1b4">A. O.<note
+            resp="FMBC" style="hidden" type="word_description"
+            xml:id="note_625152fc-d8d6-4ad3-b150-9fbf22a2b3c8" xml:lang="de ">A. O.
+            – Allerhöchste Ordre.</note> vom <date cert="high" when="1841-05-30"
+              xml:id="date_2b9c4435-8cea-4177-9fa0-2369000c9f88">30<hi
+                rend="superscript">ten</hi> Mai</date> c.<name key="PSN0113990"
+                  style="hidden" type="author">Preußen, Friedrich Wilhelm Prinz von (seit
+                  1840) Friedrich Wilhelm IV. von (1795-1861)</name><name key="CRT0113213"
+                    style="hidden" type="documents">Ordre pour le mérite – Allerhöchste
+                  Ordre seiner Majestät des Königs Friedrich Wilhelm IV. von Preußen vom
+                  30ten Mai 1841 betreffs Felix Mendelssohn Bartholdy</name></title> eine
+                    ausdrückliche Bestimmung in dieser Beziehung nicht enthielt, <note resp="FMBC"
+                      style="hidden" type="single_place_comment"
+                      xml:id="note_68ccff5e-02bd-4c4c-9276-460e91103c82" xml:lang="de ">eine
+                      ausdrückliche Bestimmung in dieser Beziehung nicht enthielt – Die Ernennung
+                      zum Königlich Preußischen Kapellmeister, erfolgte trotz Mendelssohns
+                      Vorbehalten nicht vor seinem Umzug nach Berlin. So erhielt er die
+                      Bestallungsurkunde erst mit einem Schreiben Eichhorns vom 16. Oktober 1841
+                      (Brief gb-1841-10-16-01). Grund für die Verzögerung war, dass die Ordre des
+                      Königs Friedrich Wilhelm IV. von Preußen vom 30. Mai 1841 (siehe Brief
+                      fmb-1841-06-15-01, Brief Nr. 3176, Felix Mendelssohn Bartholdy an Paul
+                      Mendelssohn Bartholdy in Berlin, Leipzig, 15. Juni 1841, Z. 26) keine
+                      Anordnung zur Verleihung des Titels enthielt. Massow teilte Mendelssohn dies
+                      über einen Brief Kortüms an ihn mit, den er seinem eigenen an Mendelssohn
+                      vom 14. Juni 1841 (Brief gb-1841-06-14-02) beilegte.</note> so habe ich
+                        deshalb unverzüglich an des <persName
+                          xml:id="persName_2a7c1274-6d37-4fb2-89b0-e978fefe77a1">Königs Majestät<name
+                            key="PSN0113990" style="hidden" type="person">Preußen, Friedrich Wilhelm
+                            Prinz von (seit 1840) Friedrich Wilhelm IV. von
+                            (1795-1861)</name></persName> berichtet und mir A.<note resp="FMBC"
+                              style="hidden" type="word_description"
+                              xml:id="note_91f6831b-f748-4527-a2fe-2c0c416669ee" xml:lang="de ">A. –
+                              Allerhöchst.</note> deren Befehle erbeten. Des <persName
+                                xml:id="persName_f706f6e2-cd70-48cc-a0c1-ab7e05e55d24">Königs Majestät<name
+                                  key="PSN0113990" style="hidden" type="person">Preußen, Friedrich Wilhelm
+                                  Prinz von (seit 1840) Friedrich Wilhelm IV. von
+                                  (1795-1861)</name></persName> haben hierauf mittelst A. O.<note resp="FMBC"
+                                    style="hidden" type="word_description"
+                                    xml:id="note_0b188af0-85ce-43b8-b2a2-280dcc180f69" xml:lang="de ">A. O. –
+                                    Allerhöchste Ordre.</note> vom <date cert="high" when="1841-06-29"
+                                      xml:id="date_b7ce7843-133f-4753-8f2a-e55df8d7d951">29<hi rend="superscript"
+                                        >ten</hi> v. M.</date> mich zu bescheiden geruht, dass <add
+                                          place="above">Allerhöchster<name key="PSN0118477" resp="writers_hand"
+                                            style="hidden">Unbekannt</name></add>
+                                        <unclear reason="deletion" resp="FMBC">Sie</unclear> den Antrag auf Verleihung
+                                        des Titels: Capellmeister an Ew. Wohlgeboren in Erfüllung gehen laßen würden,
+                                          sobald die Ver<seg type="pagebreak">|2|<pb n="2" type="pagebreak"
+                                            /></seg>hältniße in Rücksicht auf die Ihnen künftig zu gebende Stellung
+                                            definitiv bestimmt seyn werden.
+          </p>
+        </div>
+      </body>
+    </text>
+</TEI>
 

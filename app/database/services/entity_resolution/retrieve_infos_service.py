@@ -9,6 +9,10 @@ from app.database.models.creation import Creation
 from app.database.models.protag_creation import ProtagCreation
 
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class RetrieveInfosService:
     # Map prefixes to the actual Model classes
     _MODEL_MAP = {
@@ -38,17 +42,20 @@ class RetrieveInfosService:
     @classmethod
     def get_info(cls, prefix: str, key: str) -> dict:
         """The Database-dependent method."""
-        model = cls._get_model_for_prefix(prefix)
+        try:
+            model = cls._get_model_for_prefix(prefix)
+            
+            logger.debug(f"Fetching data for prefix: {prefix}, key: {key}")
+            data = model.entity_profile(key)
+            
+            if not data:
+                return {"info": "", "metadata": {}}
 
-        print(f"Fetching data for prefix '{prefix}' and key '{key}' using model '{model.__name__ if model else 'None'}'")
-        data = model.entity_profile(key)
-        print(f"Data fetched for key '{key}'")
-        
-        if not data:
-            return {"info": "", "metadata": {}}
+            return cls.assemble_entity_package(prefix, key, data)
 
-        # Delegate to the pure logic method
-        return cls.assemble_entity_package(prefix, key, data)
+        except Exception as e:
+            logger.error(f"Error retrieving info for {prefix}:{key} - {e}")
+            raise RuntimeError(f"Data package assembly failed for {prefix}:{key}") from e
 
     @classmethod
     def assemble_entity_package(cls, prefix: str, key: str, data: dict) -> dict:

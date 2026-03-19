@@ -6,6 +6,9 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import yaml
 
+
+from app.core.config import settings
+
 app = FastAPI()
 model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2', device="cuda")
 
@@ -14,18 +17,25 @@ class ChatRequest(BaseModel):
 
 @app.post("/chat")
 async def chat_with_mendelssohn(request: ChatRequest):
-    # 1. Semantische Suche (wie zuvor)
+    # 1. Semantic Search
     query_vector = model.encode(request.message).tolist()
-    db_params = yaml.safe_load(open("config/settings.yml"))["development"]["database"]
-    
-    conn = psycopg2.connect(**db_params, cursor_factory=RealDictCursor)
-    with conn.cursor() as cur:
-        cur.execute("""
-            SELECT content FROM letter_embeddings 
-            ORDER BY embedding <=> %s LIMIT 3
-        """, (str(query_vector),))
-        context_chunks = cur.fetchall()
-    conn.close()
+
+    # 2. Use the settings object we set up earlier
+    # settings.db_params is already the dict: {'host': '...', 'user': '...', etc.}
+    try:
+        conn = psycopg2.connect(**settings.db_params, cursor_factory=RealDictCursor)
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT content FROM letter_embeddings 
+                ORDER BY embedding <=> %s LIMIT 3
+            """, (str(query_vector),))
+            context_chunks = cur.fetchall()
+    except Exception as e:
+        logger.error(f"Database connection failed during chat: {e}")
+        raise HTTPException(status_code=500, detail="Database connection error")
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
     # 2. Kontext für das LLM zusammenbauen
     context_text = "\n---\n".join([c['content'] for c in context_chunks])

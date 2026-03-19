@@ -1,6 +1,12 @@
 import pytest
 import os
+import logging # Import it here to access levels
+
 from app.indexer.tei_chunker import TEIChunker
+
+# Get the logger for this specific module
+logger = logging.getLogger("FMB-Pipeline.Tests")
+
 
 @pytest.fixture
 def sample_xml_content():

@@ -1,28 +1,28 @@
 from .base_handler import TEIElementHandler
 
-
 class PersNameHandler(TEIElementHandler):
-    def handle(self, node, namespaces, context_stack):
-        # 1. Get the name as written in the text (e.g., "Felix")
-        surface_name = "".join(node.xpath(".//text()")).strip()
-        key = node.get("key")
+
+
+    def handle(self, node, namespaces, context_stack, cleaner=None):
+        # 1. Get the key from the node OR its children
+        key = node.get("key") or node.xpath("./*[@key]/@key")[0] if node.xpath("./*[@key]/@key") else None
+        
+        # 2. Get the clean surface name (only the actual text meant to be read)
+        # Often in TEI, we want the text immediate to the node, not the 'hidden' name tags
+        surface_name = node.xpath("text()")[0].strip() if node.xpath("text()") else ""
         
         metadata_to_return = {}
         display_text = surface_name
 
         if key:
-            # 2. Fetch the "Master Data" from your DB
             entity = self._get_or_fetch_entity(category="people", prefix="PSN", key=key)
             
             if entity.get("info"):
-                # 3. Enhance the text: "Felix [Mendelssohn Bartholdy, Jacob Ludwig Felix (PSN0001)]"
-                # This makes the chunk highly searchable for the full name!
-                display_text = f"{entity['info']} [{key}]"
-                
-                # 4. Store the structured metadata  later filtering
+                # Use the clean surface name + the DB info
+                # Result: "Herr von Maßows [Person: Massow, Ludwig Friedrich (1794-1859)]"
+                display_text = f"{surface_name} [{entity['info']}]"
                 metadata_to_return = {key: entity["metadata"]}
 
         new_stack = context_stack + [surface_name]
-        
-        # Return the enhanced text, the context, and the DB metadata
+
         return f" {display_text} ", new_stack, metadata_to_return

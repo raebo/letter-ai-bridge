@@ -1,7 +1,25 @@
 from .base_handler import TEIElementHandler
 
+import logging
+logger = logging.getLogger(__name__)
+
 class TitleHandler(TEIElementHandler):
-    def handle(self, node, namespaces, context_stack):
+
+    def _get_key_config(self, key: str):
+        """Helper to map prefixes to DB categories."""
+        key_upper = key.upper()
+        if key_upper.startswith("PRC"):
+            return "protag_creations", "PRC"
+        if key_upper.startswith("CRT"):
+            return "creations", "CRT"
+        if key_upper.startswith("PSN"):
+            return "people", "PSN"
+        if key_upper.startswith("GB") or key_upper.startswith("FMB"):
+            return "letters", "LET"
+        return None, None
+
+
+    def handle(self, node, namespaces, context_stack, cleaner=None):
         """
         Processes <title> tags which may contain nested <name> tags for:
         - ProtagCreations (PRC)
@@ -9,68 +27,46 @@ class TitleHandler(TEIElementHandler):
         - Letters (gb-, fmb-, LET)
         - Authors (PSN)
         """
-        # 1. Capture the immediate surface text (e.g., "Paulus" or "Schreiben vom 6ten")
-        # We use a specific XPath to avoid grabbing the hidden text inside child <name> tags
-        surface_text = "".join(node.xpath("text() | tei:hi/text()", namespaces=namespaces)).strip()
+        # 1. Clean Surface Text (e.g., "Radziwill’s Faust")
+        # Grabs text from the node and child <hi> tags, but ignores <name> text content
+        text_nodes = node.xpath("text() | tei:hi/text()", namespaces=namespaces)
+        surface_text = "".join(node.xpath("text()", namespaces=namespaces)).strip()
         
-        collected_metadata = {}
-        info_expansions = []
+        # 2. Collect all <name> keys
+        name_nodes = node.xpath(".//tei:name[@key]", namespaces=namespaces)
+        all_keys = [n.get("key") for n in name_nodes]
 
-        # 2. Iterate through nested <name> tags to find entities
-        name_nodes = node.xpath(".//tei:name", namespaces=namespaces)
-        
-        for name in name_nodes:
-            key = name.get("key")
-            name_type = name.get("type") # 'person', 'author', 'letter', 'dramatic_work', etc.
+        if not all_keys:
+            # Fallback if no keys are present
+            return f" {surface_text} ", context_stack + [surface_text], {}
+
+        raw_info_strings = []
+        metadata_to_return = {}
+
+        # 3. Iterate through all keys and fetch data based on their prefix/category
+        for key in all_keys:
+            category, prefix = self._get_key_config(key)
             
-            if not key:
-                continue
+            if category and prefix:
+                res = self._get_or_fetch_entity(category, prefix, key)
+                
+                if res and res.get("info"):
+                    raw_info_strings.append(res['info'])
+                    
+                    # Store metadata AND the identified type/category
+                    metadata_to_return[key] = {
+                        **res.get("metadata", {}),
+                        "entity_type": category,  # This tells the AI exactly what this title IS
+                        "prefix": prefix
+                    }
 
-            # 3. Decision Logic: Determine Category and Prefix
-            category, prefix = self._identify_entity_type(key, name_type)
+        # 4. Join the returning data
+        # Example result: "Radziwill's Faust [Work Info] [Person Info]"
 
-            # 4. Fetch the expanded info from your Service
-            # This calls RetrieveInfosService.get_info(prefix, key)
-            res = self._get_or_fetch_entity(category=category, prefix=prefix, key=key)
-            
-            if res and res.get("info"):
-                info_expansions.append(res["info"])
-                # Merge the metadata into the chunk's metadata dictionary
-                if res.get("metadata"):
-                    collected_metadata[key] = res["metadata"]
+        if raw_info_strings:
+            combined_info = " | ".join(raw_info_strings) 
+            full_display = f"{surface_text} [{combined_info}]".strip()
+        else:
+            full_display = surface_text
 
-        # 5. Assemble the final display text
-        # Result: "Paulus [MWV A 14] [Mendelssohn Bartholdy, Felix]"
-        expansion_str = " ".join([f"[{info}]" for info in info_expansions])
-        display_text = f"{surface_text} {expansion_str}".strip()
-
-        # Update the context stack with the clean title
-        new_stack = context_stack + [surface_text]
-
-        return display_text, new_stack, collected_metadata
-
-    def _identify_entity_type(self, key: str, name_type: str) -> tuple:
-        """
-        Helper to map XML attributes and key formats to your Model prefixes.
-        """
-        key_upper = key.upper()
-        
-        # Priority 1: Check by Key Prefix
-        if key_upper.startswith("PRC"):
-            return "protag_creations", "PRC"
-        if key_upper.startswith("CRT"):
-            return "creations", "CRT"
-        if key_upper.startswith("PSN"):
-            return "people", "PSN"
-        
-        # Priority 2: Check for Letters (gb-, fmb-, or LET)
-        if key.lower().startswith(("gb-", "fmb-")):
-            return "letters", "LET"
-            
-        # Priority 3: Fallback by XML 'type' attribute
-        if name_type == "author":
-            return "people", "PSN"
-        if name_type in ["dramatic_work", "musical_work"]:
-            return "creations", "CRT"
-            
-        return "general", "CRT"
+        return f" {full_display} ", context_stack + [surface_text], metadata_to_return
