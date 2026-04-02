@@ -1,6 +1,7 @@
 from ..connection import DBConnection
-from psycopg2.extras import DictCursor
+from psycopg2.extras import DictCursor, RealDictCursor
 from app.utils.letter_helper import LetterHelper
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -11,6 +12,28 @@ class Letter:
         self.xml_content = record['content']
         self.name = record['name']
         # Hier kannst du weitere Felder mappen, falls nötig
+
+
+    @classmethod
+    def get_batch_metadata(cls, letter_ids):
+        if not letter_ids:
+            return {}
+
+
+        format_strings = ','.join(['%s'] * len(letter_ids))
+        query = f"SELECT id, name FROM letters WHERE id IN ({format_strings})"
+        
+        conn = DBConnection.get_connection()
+        try:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                cur.execute(query, tuple(letter_ids))
+                
+                rows = cur.fetchall()
+                
+                return { row['id']: {"name": row['name']} for row in rows }
+        finally:
+            conn.close()
+
 
     @classmethod
     def find_by_name(cls, letter_name):
@@ -163,5 +186,46 @@ class Letter:
         except Exception as e:
             logger.error(f"Error getting letter info: {e}")
             raise RuntimeError("Failed to get letter entity_profile") from e
+        finally:
+            conn.close()
+
+
+    @classmethod
+    def get_raw_letters_batched(cls, batch_size: int = 100):
+        conn = DBConnection.get_connection()
+        try:
+            # Wir nutzen den RealDictCursor auch für den Named Cursor
+            with conn.cursor(name='fetch_letters_for_summary', cursor_factory=RealDictCursor) as cur:
+                query = "SELECT id, name, default_text_content FROM letters"
+                cur.execute(query)
+                
+                while True:
+                    rows = cur.fetchmany(batch_size)
+                    if not rows:
+                        break
+                    
+                    yield [
+                        {
+                            "id": r['id'],
+                            "name": r['name'],
+                            "content": r['default_text_content']
+                        } for r in rows
+                    ]
+        except Exception as e:
+            logger.error(f"Fehler beim Batched-Laden der Briefe: {e}")
+            # Wichtig: raise hier, damit du im Orchestrator den echten Fehler siehst
+            raise 
+        finally:
+            conn.close()
+
+    @classmethod
+    def get_full_text_by_id(cls, letter_id: int):
+        conn = DBConnection.get_connection()
+        try:
+            with conn.cursor() as cur:
+                # Greift auf deine Haupttabelle 'letters' zu
+                cur.execute("SELECT default_text_content FROM letters WHERE id = %s", (letter_id,))
+                row = cur.fetchone()
+                return row[0] if row else None
         finally:
             conn.close()

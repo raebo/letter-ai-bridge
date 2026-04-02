@@ -50,5 +50,18 @@ class Config:
     def db_params(self):
         return self.data.get("database", {})
 
+
+    @property
+    def api_protag_params(self):
+        return self.data.get("api", {})
+
+    @property
+    def api_host(self):
+        return self.api_protag_params.get("host")
+
+    @property
+    def api_token(self):
+        return self.api_protag_params.get("auth_key")
+
 # Global access point
 settings = Config()

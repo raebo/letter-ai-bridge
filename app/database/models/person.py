@@ -4,6 +4,23 @@ class Person:
     """Model for handling Person-related database operations."""
 
     @classmethod
+    def get_all_keys_batched(cls, batch_size: int = 100):
+        conn = DBConnection.get_connection()
+        try:
+            with conn.cursor(name='person_keys_cursor') as cur:
+                cur.execute("SELECT key FROM people WHERE key IS NOT NULL")
+                while True:
+                    rows = cur.fetchmany(batch_size)
+                    if not rows:
+                        break
+                    yield [row[0] for row in rows]
+        except Exception as e:
+            print(f"Error fetching person keys in batches: {e}")
+            yield []
+        finally:
+            conn.close()
+
+    @classmethod
     def entity_profile(cls, key: str) -> dict:
         """
         Fetches person data from the database by its unique key.

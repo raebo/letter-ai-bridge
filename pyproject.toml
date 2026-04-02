@@ -36,6 +36,10 @@ dbname = "metamw_development_prod_version"
 user = "admin"
 password = "secret"
 
+[tool.fmb_pipeline.api]
+host = "http://backend.metamw.local:3000"
+auth_key = "8VEKeLRjU_YcICeC095rpzWTnSq4K1NyTvokPNTriVwTx-4nC1R9vyvRzZlBCGOexkgI8Pixc1jZ-Twk31cJTQ"
+
 
 [tool.pytest.ini_options]
 # 1. Enable Live Logging in the Console
