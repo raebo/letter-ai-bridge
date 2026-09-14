@@ -248,7 +248,30 @@ Abnahmekriterien beschreiben die spätere Behebung, nicht bereits ausgeführte A
   keine Rails-Kommandos oder Datenbankverbindungen ausgeführt. Keine erneuten
   Anwendungstests, da ausschließlich Dokumentation ergänzt wurde.
 
-## Weitere Prüfgrenzen
+## LAB-016 — Workflow und Kurzbeschreibung für den Rechenschaftsbericht
+
+- Priorität/Status: P2 / erledigt.
+- Problem/Ziel: Den aktuellen implementierten Workflow einschließlich neuerer
+  Zusammenfassungs- und Aufenthaltsdatenpfade verständlich dokumentieren. Die
+  Erstprüfung vom 2026-09-07 bildet den heutigen Code nicht vollständig ab.
+- Umfang: `WORKFLOW.md` mit Mermaid-Diagramm, Berichtstext, Funktionsliste,
+  Codeverweisen und Prüfgrenzen; keine Änderungen am Anwendungscode.
+- Fundstellen: `scripts/process_letters.py`, `app/core/letter_ingester.py`,
+  `scripts/generate_letter_summaries.py`, `scripts/process_fmb_locations.py`,
+  `scripts/sync_whereabouts.py`, `app/api/search_service.py`,
+  `app/api/chat_service.py`, `app/api/logic/information_retriever.py`.
+- Abnahmekriterien: Getrennte Importpfade und Such-/Chat-Abfragen korrekt zeigen;
+  tatsächlich angeschlossene Datenarten von lediglich vorhandenen Schnittstellen
+  unterscheiden; direkt verwendbaren deutschen Berichtstext liefern.
+- Prüfung/Ergebnis: `WORKFLOW.md` erstellt und mit den aktuellen Aufrufpfaden
+  abgeglichen; Berichtstext und knappe Funktionsliste enthalten. Alle 18 lokalen
+  Dateiverweise geprüft; `git diff --check` ohne Befund. Mermaid nicht separat
+  gerendert. Keine Anwendungstests oder Live-Aufrufe, da nur Dokumentation geändert
+  wurde. Alte Fehler-Tickets wurden nicht neu abgenommen oder geschlossen.
+- Risiken: Implementierung ist kein Nachweis für erfolgreichen Live-Betrieb;
+  angewandtes DB-Schema, Datenbestand und Antwortqualität bleiben unbekannt.
+
+### Prüfgrenzen der Erstprüfung vom 2026-09-07
 
 Unbekannte Entitätsprefixe führen in `RetrieveInfosService.get_info` nach einer
 Warnung zum Zugriff auf `None.entity_profile`; aktuelle interne Handler verwenden
