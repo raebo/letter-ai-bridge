@@ -19,6 +19,16 @@ def test_complex_word_healing():
     healed = TEICleaner.heal_word_breaks(text)
     assert healed == "Die Verhältniße sind schwierig."
 
+def test_word_healing_only_across_whitespace():
+    # LAB-014: a hyphen with no whitespace after it (place-name compounds,
+    # ISO dates) is a regular hyphen, not a line-/word-break, and must
+    # survive heal_word_breaks unchanged.
+    assert TEICleaner.heal_word_breaks("Berlin-Leipzig") == "Berlin-Leipzig"
+    assert TEICleaner.heal_word_breaks("1841-07-02") == "1841-07-02"
+
+    # A hyphen followed by a single space is still a genuine word break.
+    assert TEICleaner.heal_word_breaks("Ver- hältniße") == "Verhältniße"
+
 @patch('app.database.services.entity_resolution.retrieve_infos_service.RetrieveInfosService.get_info')
 def test_report_key_cache_hit_matches_first_lookup_shape(mock_get_info):
     # LAB-007: report_key used to wrap the metadata dict in an extra

@@ -35,8 +35,11 @@ class TEICleaner:
     @staticmethod
     def heal_word_breaks(text):
         """Löst Worttrennungen auf, z.B. 'Ver- hältniße' -> 'Verhältnisse'"""
-        # Removes hyphen + optional whitespace between word parts
-        return re.sub(r'(\w+)-\s*(\w+)', r'\1\2', text)
+        # Only heal a hyphen that is followed by whitespace (evidence of a
+        # line-/word-break). A hyphen directly joining two words with no
+        # whitespace (e.g. "Berlin-Leipzig", ISO dates "1841-07-02") is a
+        # regular hyphen and must be left untouched.
+        return re.sub(r'(\w+)-\s+(\w+)', r'\1\2', text)
 
     @classmethod
     def reset(cls):
