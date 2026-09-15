@@ -271,6 +271,55 @@ Abnahmekriterien beschreiben die spätere Behebung, nicht bereits ausgeführte A
 - Risiken: Implementierung ist kein Nachweis für erfolgreichen Live-Betrieb;
   angewandtes DB-Schema, Datenbestand und Antwortqualität bleiben unbekannt.
 
+## LAB-017 — TitleHandler verliert Text in `<hi>`-Kindknoten und bündelt Entitäten in einer Klammer
+
+- Priorität/Status: P1 / offen.
+- Fundstellen: `app/indexer/handler/title_handler.py:32-33`, `:44`, `:66-68`.
+- Problem: Zwei unabhängige Fehler im selben Handler.
+  1. `text_nodes` (Zeile 32) sammelt Text über `"text() | tei:hi/text()"`, wird
+     aber nie verwendet. `surface_text` (Zeile 33) liest ausschließlich direkten
+     `text()`. Steht sichtbarer Titeltext in `<hi>`-Kindknoten (z. B. Werktitel
+     oder hochgestellte Ordinalzahlen wie „6ten“ als „6“ + `<hi>ten</hi>`), geht
+     dieser Text vollständig verloren.
+  2. Mehrere aufgelöste Entitäten werden mit `" | "` in eine gemeinsame Klammer
+     zusammengeführt (`[Work Info | Person Info]`), obwohl der Kommentar in
+     Zeile 64 je Entität eine eigene Klammer beschreibt (`[Work Info] [Person Info]`).
+     Format widerspricht der eigenen Dokumentation im Code.
+- Nachweis: `tests/chunk_generation/handler/test_title_handler.py` —
+  `test_creation_with_author`, `test_gb_letter_with_author`,
+  `test_gb_letter_with_author_with_hi`, `test_mendelssohn_work_with_author`,
+  `test_title_with_multiple_authors`. Alle mocken `_get_or_fetch_entity`, keine
+  DB-Verbindung nötig. Isoliert nachvollzogen: `surface_text` bleibt bei
+  `<hi>`-Aufteilung leer bzw. unvollständig.
+- Umfang/Abnahme: `surface_text` aus direkten und `<hi>`-Kindtexten zusammenführen;
+  Klammerformat fachlich festlegen (je Entität eine Klammer, oder Kommentar und
+  Tests bewusst an das aktuelle Format anpassen) und konsistent umsetzen. Alle
+  fünf genannten Tests grün, ohne Live-DB.
+- Risiko: Titel mit `<hi>`-Formatierung verlieren ihren sichtbaren Text im Index;
+  betrifft Suchqualität und Chat-Kontext für betroffene Briefe.
+
+## LAB-018 — Satzsplitter schützt inneren Punkt zweiteiliger Abkürzungen nicht
+
+- Priorität/Status: P2 / offen.
+- Fundstelle: `app/utils/letter_helper.py:39-40`.
+- Problem: Bei zweiteiligen Abkürzungen mit eigenem inneren Punkt (`"v. M"`,
+  `"d. M"`, `"d. J"`, `"u. a"`, `"z. B"`, `"u. s. w"`) schützt die Regex nur den
+  letzten Punkt vor dem Platzhalter. Der innere Punkt (z. B. das „v.“ in „v. M“)
+  bleibt ein gewöhnlicher Satzpunkt und erfüllt zusammen mit dem folgenden
+  Großbuchstaben das Split-Muster `(?<=[.!?])\s+(?=[A-Z0-9])`.
+- Reproduktion: `split_into_sentences("Ihr Schreiben v. M. habe ich erhalten. Es war sehr erfreulich.")`
+  liefert drei statt zwei Sätze (Split zusätzlich nach „v.“). Per `re.sub`-Tracing
+  bestätigt: Die Ersetzung liefert `"v. M___DOT___"`, der innere Punkt bleibt roh
+  erhalten. Test `test_abbreviation_protection_vm` in
+  `tests/utils/test_letter_helper.py` schlägt entsprechend fehl.
+- Umfang/Abnahme: Innere Punkte solcher Abkürzungen ebenfalls schützen, z. B.
+  durch Ersetzen aller Punkte innerhalb der gematchten Abkürzungsspanne statt
+  nur des letzten. Genannter Test besteht; `test_basic_splitting` und
+  `test_title_protection` bleiben grün.
+- Risiko: Briefe werden an falschen Stellen in Sätze/Chunks zerschnitten, was
+  Embedding-Kontext und Chat-Antworten mit unvollständigen Satzfragmenten
+  beeinträchtigen kann.
+
 ### Prüfgrenzen der Erstprüfung vom 2026-09-07
 
 Unbekannte Entitätsprefixe führen in `RetrieveInfosService.get_info` nach einer
