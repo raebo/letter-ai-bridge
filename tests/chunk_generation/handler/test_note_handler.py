@@ -9,7 +9,8 @@ def test_note_handler_uses_stack():
     
     # Testfall: Stack hat einen Ort
     stack = ["Leipzig"]
-    result, new_stack = handler.handle(node, {}, stack)
-    
+    result, new_stack, metadata = handler.handle(node, {}, stack)
+
     assert "Info zu Leipzig" in result
     assert new_stack == ["Leipzig"] # Stack sollte durch Note nicht verändert werden
+    assert metadata == {} # NoteHandler liefert keine Entitätsmetadaten

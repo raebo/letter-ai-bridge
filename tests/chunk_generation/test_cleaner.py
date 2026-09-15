@@ -8,9 +8,11 @@ def test_note_handling():
     xml = '<note xmlns="http://www.tei-c.org/ns/1.0">A. O. – Allerhöchste Ordre.</note>'
     node = etree.fromstring(xml)
     ns = {"tei": "http://www.tei-c.org/ns/1.0"}
-    
-    result = TEICleaner.process_node(node, ns)
-    assert "[Anm.: A. O. – Allerhöchste Ordre.]" in result
+
+    # process_node liefert (text, metadata), nicht einen einzelnen String
+    result_text, metadata = TEICleaner.process_node(node, ns)
+    assert "[Anm: A. O. – Allerhöchste Ordre.]" in result_text
+    assert metadata == {}
 
 def test_complex_word_healing():
     text = "Die Ver-\n   hältniße sind schwierig."

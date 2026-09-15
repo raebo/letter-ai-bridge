@@ -31,7 +31,7 @@ class PlaceHandler(TEIElementHandler):
 
         
         if not all_keys:
-            return f" {surface_text} ", context_stack, {}
+            return f" {surface_text} ", context_stack + [surface_text], {}
 
         raw_info_strings = []
         metadata_to_return = {}
@@ -70,5 +70,5 @@ class PlaceHandler(TEIElementHandler):
         # Final pass through StringCleaner for whitespace/newlines
         full_display = StringCleaner.normalize_content(full_display)
 
-        return f" {full_display} ", context_stack, metadata_to_return
+        return f" {full_display} ", context_stack + [surface_text], metadata_to_return
 
