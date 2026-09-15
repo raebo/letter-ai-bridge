@@ -38,6 +38,7 @@ class IngestChunksService:
         except Exception as e:
             self.conn.rollback()
             print(f"Fehler beim Datenbank-Upload: {e}")
+            raise
 
     def close(self):
         self.conn.close()
