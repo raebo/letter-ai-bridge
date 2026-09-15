@@ -46,15 +46,15 @@ class TEICleaner:
             cls._captured_keys[key].clear()
 
     @classmethod
-    def report_key(cls, category, key, info_string, **metadata):
+    def report_key(cls, category, key, info_string, metadata=None):
         """
-        Register a key with its info string and a flexible metadata hash.
-        Usage: StringCleaner.report_key("people", "PSN1", "Felix...", notes="...", gender="m")
+        Register a key with its info string and a metadata dict.
+        Usage: StringCleaner.report_key("people", "PSN1", "Felix...", metadata={"notes": "...", "gender": "m"})
         """
         if category in cls._captured_keys:
             cls._captured_keys[category][key] = {
                 "info": info_string,
-                "metadata": metadata  # This is now a dict: {'notes': '...', 'etc': '...'}
+                "metadata": metadata or {}
             }
 
     @classmethod
