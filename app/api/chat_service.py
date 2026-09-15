@@ -21,7 +21,9 @@ class ChatRequest(BaseModel):
     message: str
 
 @app.post("/chat")
-async def chat_with_mendelssohn(request: ChatRequest):
+def chat_with_mendelssohn(request: ChatRequest):
+    # Plain (sync) endpoint: FastAPI runs it in a threadpool, so the blocking
+    # embedding model, DB, and Ollama calls below don't stall the event loop.
     try:
         # 1. Schritt: User-Frage vektorisieren
         # Das Embedding-Model sollte als Klassen-Attribut oder global verfügbar sein

@@ -1,6 +1,9 @@
-import asyncio
 import importlib
+import inspect
 from unittest.mock import MagicMock, patch
+
+import pytest
+from fastapi import HTTPException
 
 
 def _load_search_service():
@@ -30,7 +33,35 @@ def test_search_letters_uses_shared_environment_aware_db_config():
 
     with patch('app.database.connection.DBConnection.get_connection', return_value=mock_conn) as mock_get_conn:
         request = search_service.QueryRequest(query="Felix", limit=3)
-        result = asyncio.run(search_service.search_letters(request))
+        result = search_service.search_letters(request)
 
     mock_get_conn.assert_called_once()
     assert result == {"results": [{"content": "x", "metadata": {}, "distance": 0.1}]}
+
+
+def test_search_letters_is_a_plain_sync_endpoint():
+    # LAB-012: search_letters does purely blocking work (model inference,
+    # psycopg2) with no `await` anywhere, but was declared `async def`. That
+    # runs it directly on FastAPI's single event loop instead of its
+    # threadpool, so a slow request would stall every other request. A plain
+    # `def` endpoint is dispatched to the threadpool by FastAPI automatically.
+    search_service = _load_search_service()
+    assert not inspect.iscoroutinefunction(search_service.search_letters)
+
+
+def test_search_letters_closes_connection_even_when_query_fails():
+    # LAB-012: the connection was only closed after a successful query, so a
+    # DB error left it open/leaked.
+    search_service = _load_search_service()
+
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value.__enter__.side_effect = RuntimeError("query boom")
+
+    search_service.model.encode.return_value.tolist.return_value = [0.1, 0.2]
+
+    with patch('app.database.connection.DBConnection.get_connection', return_value=mock_conn):
+        request = search_service.QueryRequest(query="Felix", limit=3)
+        with pytest.raises(HTTPException):
+            search_service.search_letters(request)
+
+    mock_conn.close.assert_called_once()
