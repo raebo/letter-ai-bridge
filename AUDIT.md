@@ -89,16 +89,43 @@ Abnahmekriterien beschreiben die spätere Behebung, nicht bereits ausgeführte A
   bestehen, sobald der Konfigurationsschalter aktiviert wird — daher P2 statt P0,
   nicht vollständig geschlossen.
 
-## LAB-002 — Import verarbeitet höchstens 100 Briefe
+## LAB-002 — `limit 100` in `find_all_with_xml` bereits auskommentiert; kein aktiver Import-Pfad
 
-- Priorität/Status: P1 / offen.
-- Fundstelle: `app/database/models/letter.py:22`.
-- Problem/Nachweis: `find_all_with_xml` enthält fest `limit 100`; `batch_size`
-  verändert nur die Leseportion. Alle weiteren Briefe fehlen. Zusammen mit LAB-001
-  werden zuvor vorhandene Embeddings dieser Briefe dauerhaft entfernt.
-- Umfang/Abnahme: Vollimport ohne versteckte Gesamtbegrenzung; optionale Begrenzung
-  ausdrücklich konfigurierbar. Prüfung mit mehr als 100 simulierten Datensätzen
-  und mehreren Batchgrößen belegt vollständige Verarbeitung.
+- Priorität/Status: P2 / offen (herabgestuft von P1; siehe Korrektur unten).
+- Fundstellen: `app/database/models/letter.py:80-96` (`find_all_with_xml`),
+  `app/database/models/letter.py:52-78` (`find_all_missing_embeddings`),
+  `scripts/process_letters.py:53-54`.
+- Korrektur (2026-09-19): Ursprüngliche Fassung beschrieb ein festes `limit 100`
+  in `find_all_with_xml`, das den Import auf 100 Briefe begrenzt. Traf auf den
+  Codestand vor Commit `4beb8cb` zu (`afd9cd5`); in `4beb8cb` — demselben Commit,
+  der auch das Truncate-Gating aus LAB-001 einführte — wurde die `limit 100`-Zeile
+  auskommentiert und durch eine Query ohne Limit ersetzt
+  (`app/database/models/letter.py:87-88`). Per Nutzerhinweis geprüft und
+  richtiggestellt.
+- Aktueller Stand: `scripts/process_letters.py:54` ruft ohnehin nicht
+  `find_all_with_xml` auf, sondern `Letter.find_all_missing_embeddings(batch_size=10)`
+  (Zeile 53 zeigt den `find_all_with_xml`-Aufruf nur noch auskommentiert als
+  Altlast). `find_all_missing_embeddings` selbst hatte nie ein Limit: Sie liest
+  per `LEFT JOIN` gegen `letter_embeddings` und `fetchmany(batch_size)` alle
+  Briefe ohne Embedding, unbegrenzt in der Gesamtmenge.
+- Restrisiko/Beobachtung: `find_all_with_xml` (weiterhin im Code vorhanden, aber
+  aktuell nicht vom Pipeline-Einstieg aufgerufen) nutzt `conn.cursor()` ohne
+  Servername, liest also serverseitig ungebunden — im Gegensatz zu
+  `get_raw_letters_batched` (`letter.py:194-219`), die für denselben Zweck einen
+  benannten (server-seitigen) Cursor verwendet. Bei sehr großen Tabellen ist das
+  ein Robustheits-/Speicheraspekt, kein Datenverlust. Kein Konfigurationsschalter
+  betrifft dies, daher kein vergleichbares Restrisiko wie bei LAB-001.
+- Nachweis: `git log -p --follow -- app/database/models/letter.py` zeigt die
+  Auskommentierung des `limit 100` in `4beb8cb`; aktueller Aufrufpfad in
+  `scripts/process_letters.py` gelesen, nicht ausgeführt.
+- Umfang/Abnahme: Kein Sofortumsetzungsauftrag. Ursprüngliche Abnahmekriterien
+  (Test mit >100 simulierten Datensätzen über mehrere Batchgrößen) wurden nicht
+  ausgeführt, da kein aktiver Defekt mehr vorliegt, der sie rechtfertigt; bei
+  künftiger Bearbeitung als Regressionsschutz nachholen, insbesondere für
+  `find_all_missing_embeddings`, den tatsächlich genutzten Pfad.
+- Risiko: Kein Datenverlust durch eine verdeckte 100er-Grenze mehr im aktuell
+  genutzten Importpfad; verbleibt als P2 wegen fehlendem Regressionstest und
+  des Cursor-Robustheitsaspekts in `find_all_with_xml`.
 
 ## LAB-003 — Orts-Handler bricht jeden betroffenen Brief ab
 
