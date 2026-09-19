@@ -225,14 +225,42 @@ Abnahmekriterien beschreiben die spätere Behebung, nicht bereits ausgeführte A
 
 ## LAB-009 — APIs ignorieren die konfigurierte Umgebung
 
-- Priorität/Status: P1 / offen.
-- Fundstellen: `app/api/search_service.py:15`, `app/api/chat_service.py:19`.
-- Problem/Nachweis: Beide APIs lesen fest YAML-Abschnitt `development`, auch bei
-  `APP_ENV=test` oder `production`. Der Dateipfad hängt außerdem vom Arbeitsverzeichnis
-  ab, anders als in `app/core/config.py`.
-- Umfang/Abnahme: gemeinsame umgebungsabhängige Konfiguration verwenden; Test mit
-  unterschiedlichen fiktiven DB-Zielen belegt richtige Auswahl ohne echte Verbindung.
-- Risiko: Zugriff auf falsche Datenbestände; Umgebungsname allein isoliert Tests nicht.
+- Priorität/Status: P1 / erledigt (Teilkorrektur; siehe Restrisiko und LAB-019).
+- Fundstellen: `app/api/search_service.py` (vor Fix: Zeile 15), neu:
+  `app/api/config_loader.py`.
+- Korrektur (2026-09-19): Die zweite ursprünglich genannte Fundstelle
+  (`app/api/chat_service.py:19`) ist stale. `chat_service.py` liest seit Commit
+  `4beb8cb` gar kein `config/settings.yml` mehr direkt; der Zugriff läuft über
+  `Letter`/`LetterEmbedding`/`EntityEmbedding` → `DBConnection` →
+  `app/core/config.py` (liest ausschließlich `pyproject.toml`, keine
+  YAML-/Umgebungslogik). Das ursprüngliche Problem in `chat_service.py` existiert
+  in dieser Form nicht mehr; der davon unabhängig fortbestehende Mangel an
+  Umgebungslogik im `DBConnection`-Pfad ist als eigener Befund unter LAB-019
+  dokumentiert, nicht Teil dieses Fixes.
+- Umsetzung: `load_db_config()` aus `search_service.py` in eigenes Modul
+  `app/api/config_loader.py` ausgelagert (verhindert, dass Tests den
+  `SentenceTransformer`/CUDA-Import von `search_service.py` beim Import
+  mitausführen — vgl. `AGENTS.md`, „API-Importe können Modelle laden und CUDA
+  initialisieren"). Liest jetzt `os.environ.get("APP_ENV", "development")` statt
+  fest `"development"`, und löst den Pfad zu `config/settings.yml` relativ zur
+  eigenen Moduldatei auf statt relativ zum Arbeitsverzeichnis.
+  `search_service.py` importiert die Funktion nur noch.
+- Nachweis/Prüfung: `tests/api/test_config_loader.py` (neu, 4 Tests) — Default auf
+  `development` ohne gesetztes `APP_ENV`, Auswahl von `test` über `APP_ENV`,
+  explizites `app_env`-Argument überschreibt die Umgebungsvariable, unbekannte
+  Umgebung löst `KeyError` aus. Arbeitet gegen eine temporäre YAML-Datei
+  (`tmp_path`), keine echte DB-Verbindung, keine reale `config/settings.yml`
+  gelesen. Ausgeführt: `PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  .venv/bin/python -m pytest tests/api/test_config_loader.py -q -p no:cacheprovider`
+  → 4 passed. Zusätzlich `py_compile` auf beide geänderten Dateien (Syntaxprüfung
+  ohne Import/Modell-Ladevorgang). Die volle Suite (`tests -q`) wurde bewusst
+  nicht erneut gesammelt, um keinen Import von `search_service.py`/`chat_service.py`
+  mit Modell-/DB-Seiteneffekten auszulösen.
+- Restrisiko: Ob `letter_ai_test`/`postgres` unter `localhost:5432` tatsächlich
+  erreichbar ist, wurde nicht geprüft (kein Verbindungsversuch ohne Freigabe).
+  Der Fix macht die Auswahl korrekt, garantiert aber nicht, dass die Ziel-DB
+  existiert. `search_service.py:29` verbindet weiterhin ungeprüft mit den
+  zurückgegebenen Parametern.
 
 ## LAB-010 — API-Installation und CPU-Start funktionieren nicht zuverlässig
 
@@ -385,6 +413,39 @@ Abnahmekriterien beschreiben die spätere Behebung, nicht bereits ausgeführte A
 - Risiko: Briefe werden an falschen Stellen in Sätze/Chunks zerschnitten, was
   Embedding-Kontext und Chat-Antworten mit unvollständigen Satzfragmenten
   beeinträchtigen kann.
+
+## LAB-019 — DBConnection/pyproject.toml-Pfad kennt keine Umgebungen
+
+- Priorität/Status: P2 / offen.
+- Fundstellen: `app/core/config.py:41-43` (`db_params`), `app/database/connection.py`,
+  `pyproject.toml:32-37` (`[tool.fmb_pipeline.database]`).
+- Anlass: Befund während der Bearbeitung von LAB-009 (2026-09-19). Nutzerfrage,
+  ob bereits eine Testdatenbank existiert, führte zur Prüfung von
+  `config/settings.yml` (dort existiert ein `test`-Abschnitt mit
+  `database: letter_ai_test`) und zum Vergleich mit dem tatsächlich von
+  `chat_service.py`, `process_letters.py` und allen `app/database/models/*`
+  genutzten Konfigurationspfad.
+- Problem: `app/core/config.py` liest ausschließlich `pyproject.toml` →
+  `[tool.fmb_pipeline.database]` — ein einziger, flacher Block ohne
+  Umgebigungsunterscheidung. Es gibt dort keine Entsprechung zum `test`-Abschnitt
+  aus `config/settings.yml`. Jeder Code, der über `DBConnection`/`Letter`/
+  `LetterEmbedding`/`EntityEmbedding` auf die DB zugreift — also die gesamte
+  Pipeline (`scripts/process_letters.py`) und `chat_service.py` — verbindet sich
+  damit immer mit derselben, in `pyproject.toml` eingetragenen Datenbank
+  (aktuell `metamw_development_prod_version`), unabhängig von `APP_ENV`.
+  `AGENTS.md`s Beschreibung von `app/core/config.py` als „YAML-Konfiguration mit
+  APP_ENV" trifft auf den aktuellen Code nicht zu: Es ist TOML-basiert und kennt
+  `APP_ENV` nicht.
+- Umfang/Abnahme (bei künftiger Bearbeitung): Klären, ob `pyproject.toml` um
+  umgebungsspezifische Blöcke erweitert wird oder ob `DBConnection`/
+  `app/core/config.py` stattdessen `config/settings.yml` (inkl. `test`-Abschnitt)
+  nutzen soll, um eine doppelte Konfigurationsquelle zu vermeiden. Isolierter Test
+  belegt korrekte Auswahl je `APP_ENV` ohne echte Verbindung, analog zu
+  `tests/api/test_config_loader.py` aus LAB-009.
+- Risiko: Ohne diese Angleichung bleibt eine echte Testumgebung für die Pipeline
+  und den Chat-Dienst praktisch unerreichbar, obwohl `config/settings.yml`
+  formal eine vorsieht — nur `search_service.py` (nach LAB-009-Fix) kann sie
+  tatsächlich nutzen.
 
 ### Prüfgrenzen der Erstprüfung vom 2026-09-07
 

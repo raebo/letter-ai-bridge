@@ -3,16 +3,13 @@ from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import yaml
+
+from app.api.config_loader import load_db_config
 
 app = FastAPI(title="Mendelssohn AI Search API")
 
 # 1. Modell beim Start laden (RTX 3080)
 model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2', device="cuda")
-
-def load_db_config():
-    with open("config/settings.yml", "r") as f:
-        return yaml.safe_load(f)["development"]["database"]
 
 class QueryRequest(BaseModel):
     query: str
