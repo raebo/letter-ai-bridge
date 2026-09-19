@@ -55,19 +55,39 @@ Abnahmekriterien beschreiben die spätere Behebung, nicht bereits ausgeführte A
 - Abnahme: Projektübersicht, Freigabegrenzen, Ticketprozess, priorisierte Befunde
   und Prüfgrenzen dokumentiert. Keine Umsetzung der Fehler-Tickets beauftragt.
 
-## LAB-001 — Unbedingte Löschung des gesamten Embedding-Bestands
+## LAB-001 — Löschung des gesamten Embedding-Bestands hinter Konfigurationsschalter
 
-- Priorität/Status: P0 / offen.
-- Fundstellen: `scripts/process_letters.py:29`, `app/database/models/letter_embedding.py:17`.
-- Problem: Jeder Pipeline-Lauf führt `TRUNCATE ... RESTART IDENTITY CASCADE` aus
-  und committet separat vor dem ersten Brief. Nachfolgende XML-, Modell- oder
-  DB-Fehler lassen einen leeren oder unvollständigen Index zurück. `CASCADE` kann
-  zusätzlich referenzierende Tabellen erfassen, abhängig vom externen Schema.
-- Nachweis: statischer Aufrufpfad; absichtlich nicht ausgeführt.
-- Umfang/Abnahme: Standardlauf erhält bestehende Daten; expliziter Reset nur mit
-  überprüftem Ziel und Freigabe. Vollständigen Ersatz erst nach erfolgreichem Aufbau
-  veröffentlichen. Abbruchtest mit DB-Doubles belegt Erhalt des bisherigen Bestands.
-- Risiko: Höchste Behebungspriorität vor jedem echten Import.
+- Priorität/Status: P2 / offen (herabgestuft von P0; siehe Korrektur unten).
+- Fundstellen: `scripts/process_letters.py:46-50`, `app/database/models/letter_embedding.py:8-21`,
+  `app/core/config.py:41-43`, `pyproject.toml:30`.
+- Korrektur (2026-09-19): Ursprüngliche Fassung dieses Tickets beschrieb ein
+  unbedingtes `TRUNCATE` bei jedem Pipeline-Lauf. Das traf auf einen älteren
+  Codestand zu (Commit `afd9cd5`), wurde aber bereits in Commit `4beb8cb`
+  ("useing new config object pyproject.toml...") behoben: Der Aufruf steht seither
+  hinter `if settings.truncate_embeddings_on_start:`. Die Beschreibung war seither
+  nicht an den Code nachgeführt worden; per Nutzerhinweis geprüft und richtiggestellt.
+- Aktueller Stand: `truncate_embeddings_on_start` liest ausschließlich aus
+  `pyproject.toml` (`[tool.fmb_pipeline]`), Default bei fehlendem Schlüssel `False`
+  (`app/core/config.py:42-43`); aktuell in `pyproject.toml:30` explizit `false`
+  gesetzt. Kein `config/settings.yml`-Bezug für diesen Schalter. Bei `false`
+  (Standardlauf) wird `LetterEmbedding.truncate_table()` nicht erreicht; die Pipeline
+  verarbeitet nur `Letter.find_all_missing_embeddings(...)`.
+- Restrisiko: `truncate_table()` (`app/database/models/letter_embedding.py:17`) führt
+  weiterhin `TRUNCATE TABLE letter_embeddings RESTART IDENTITY CASCADE` aus, sobald
+  der Schalter auf `true` gesetzt wird — ohne Sicherung, ohne Bestätigungsabfrage,
+  `CASCADE` kann je nach Schema referenzierende Tabellen mitreißen. Da `pyproject.toml`
+  versioniert ist, würde ein Commit, der den Schalter auf `true` setzt, ihn für jeden
+  nachfolgenden Lauf aktivieren, bis er zurückgesetzt wird.
+- Nachweis: `git log -p -- scripts/process_letters.py` zeigt Einführung der Bedingung
+  in `4beb8cb`; statischer Codepfad zu `truncate_embeddings_on_start` und
+  `truncate_table()` gelesen, nicht ausgeführt.
+- Umfang/Abnahme: Kein Sofortumsetzungsauftrag. Bei künftiger Bearbeitung: Schutz
+  gegen versehentliches Setzen von `truncate_embeddings_on_start = true` (z. B.
+  explizite Bestätigung/Log-Warnung vor Ausführung, getrennte Freigabe für Reset-Läufe)
+  bewerten; Abbruchtest mit DB-Doubles für beide Zweige (`true`/`false`) ergänzen.
+- Risiko: Kein unmittelbares Datenverlustrisiko im Standardlauf mehr. Risiko bleibt
+  bestehen, sobald der Konfigurationsschalter aktiviert wird — daher P2 statt P0,
+  nicht vollständig geschlossen.
 
 ## LAB-002 — Import verarbeitet höchstens 100 Briefe
 
