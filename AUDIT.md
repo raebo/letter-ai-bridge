@@ -127,16 +127,35 @@ Abnahmekriterien beschreiben die spätere Behebung, nicht bereits ausgeführte A
   genutzten Importpfad; verbleibt als P2 wegen fehlendem Regressionstest und
   des Cursor-Robustheitsaspekts in `find_all_with_xml`.
 
-## LAB-003 — Orts-Handler bricht jeden betroffenen Brief ab
+## LAB-003 — `new_stach`-NameError im Orts-Handler bereits behoben
 
-- Priorität/Status: P1 / offen.
-- Fundstelle: `app/indexer/handler/place_handler.py:11`.
-- Problem: Rückgabe referenziert undefiniertes `new_stach`. Auch bloße Korrektur
-  zu `new_stack` reicht nicht: Es fehlen die dritten Rückgabedaten für den Dispatcher.
-- Nachweis: `test_mendelssohn_chunking` und `test_contextual_place_note_linkage`
-  scheitern mit `NameError`. Die Pipeline fängt den Fehler pro Brief und überspringt ihn.
-- Umfang/Abnahme: konsistentes Dreiertupel; Ortsname, Schlüssel und Kontext werden
-  korrekt weitergegeben; realistischer Brief mit Ort wird vollständig verarbeitet.
+- Priorität/Status: P2 / offen (herabgestuft von P1; siehe Korrektur unten).
+- Fundstelle: `app/indexer/handler/place_handler.py:17-73` (`handle`).
+- Korrektur (2026-09-19): Ursprüngliche Fassung beschrieb eine Rückgabe mit
+  undefiniertem `new_stach` statt eines korrekten Dreiertupels. Traf auf den
+  Codestand vor Commit `4beb8cb` zu (`afd9cd5`: `return f" {display_text} ", new_stach`);
+  in `4beb8cb` — demselben Commit, der auch LAB-001 (Truncate-Gating) und LAB-002
+  (`limit 100`) behob — wurde `handle()` auf ein konsistentes Dreiertupel
+  `(text, context_stack, metadata)` umgestellt. Per Nutzerhinweis geprüft und
+  richtiggestellt.
+- Aktueller Stand: Beide Rückgabepfade in `handle()` liefern das erwartete
+  Dreiertupel: Zeile 34 (`return f" {surface_text} ", context_stack, {}`, kein
+  Schlüssel gefunden) und Zeile 73 (`return f" {full_display} ", context_stack,
+  metadata_to_return`, aufgelöste Entitäten). Kein `NameError` im aktuellen Code.
+- Nachweis: `git log -p --follow -- app/indexer/handler/place_handler.py` zeigt
+  Einführung des Dreiertupels in `4beb8cb`; aktueller Quelltext vollständig gelesen.
+  Die referenzierten Tests (`test_mendelssohn_chunking`,
+  `test_contextual_place_note_linkage`) wurden **nicht** ausgeführt: Sie mocken
+  `_get_or_fetch_entity`/`RetrieveInfosService` nicht, und `pyproject.toml:35`
+  zeigt `dbname = "metamw_development_prod_version"` — ein Lauf könnte laut
+  `AGENTS.md` eine echte DB-Verbindung auslösen. Prüfgrenze ausdrücklich vermerkt.
+- Umfang/Abnahme: Kein Sofortumsetzungsauftrag. Bei künftiger Bearbeitung: die
+  beiden genannten Tests mit gemockter `_get_or_fetch_entity`/DB-Verbindung
+  tatsächlich grün nachweisen, statt nur statisch zu lesen; DB-lose Testfixture
+  für `RetrieveInfosService` ergänzen, falls noch nicht vorhanden.
+- Risiko: Kein aktiver Pipeline-Abbruch durch diesen Fehler mehr erkennbar;
+  verbleibt als P2, da die ursprünglichen Abnahmekriterien (grüne Tests) nicht
+  ausgeführt, sondern nur statisch nachvollzogen wurden.
 
 ## LAB-004 — Gesammelte Entitätsmetadaten werden verworfen
 
