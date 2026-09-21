@@ -1,10 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
-import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from app.api.config_loader import load_db_config
+from app.database.connection import DBConnection
 
 app = FastAPI(title="Mendelssohn AI Search API")
 
@@ -22,10 +21,9 @@ async def search_letters(request: QueryRequest):
         query_vector = model.encode(request.query).tolist()
 
         # B. Vektor-Suche in Postgres
-        db_params = load_db_config()
-        conn = psycopg2.connect(**db_params, cursor_factory=RealDictCursor)
-        
-        with conn.cursor() as cur:
+        conn = DBConnection.get_connection()
+
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             # Wir nutzen den Cosine Distance Operator <=> von pgvector
             search_sql = """
                 SELECT content, metadata, (embedding <=> %s) as distance
