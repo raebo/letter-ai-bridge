@@ -32,6 +32,7 @@ def run_pipeline():
 
         # 1. Setup
         DBConnection.set_config(settings.db_params)
+        LetterEmbedding.ensure_table()
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2', device=device)
 

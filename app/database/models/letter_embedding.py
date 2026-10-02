@@ -5,6 +5,43 @@ class LetterEmbedding:
     _table_name = "letter_embeddings" # Defined as class variable for @classmethod access
 
     @classmethod
+    def ensure_table(cls):
+        """Create the brief index for the pipeline's 384-dimensional model.
+
+        Existing tables and rows are preserved. Incompatible existing schemas
+        are not migrated automatically; PostgreSQL errors stop the startup.
+        """
+        conn = DBConnection.get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS letter_embeddings (
+                        id bigserial PRIMARY KEY,
+                        letter_id bigint NOT NULL REFERENCES letters(id),
+                        content text NOT NULL,
+                        metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+                        embedding vector(384) NOT NULL,
+                        embedding_type text NOT NULL DEFAULT 'chunk',
+                        created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cur.execute("""
+                    CREATE INDEX IF NOT EXISTS index_letter_embeddings_on_letter_id
+                    ON letter_embeddings (letter_id)
+                """)
+                cur.execute("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_letter_embeddings_on_summary_letter_id
+                    ON letter_embeddings (letter_id) WHERE embedding_type = 'summary'
+                """)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    @classmethod
     def truncate_table(cls):
         """
         DANGER: Deletes all rows from the letter_embeddings table.
